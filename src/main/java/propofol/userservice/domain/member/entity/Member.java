@@ -1,9 +1,6 @@
 package propofol.userservice.domain.member.entity;
 
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import javax.persistence.*;
 import java.time.LocalDate;
@@ -23,8 +20,8 @@ public class Member extends BaseEntity{
     private String password; // 비밀번호
     @Column(nullable = false, updatable = false)
     private String username; // 사용자 이름(성명)
-    @Column(nullable = false)
-    private String nickName; // 별명
+    @Column(nullable = false, unique = true)
+    private String nickname; // 별명
     @Column(nullable = false)
     private String phoneNumber;
     private LocalDate birth;
@@ -35,12 +32,12 @@ public class Member extends BaseEntity{
     private MemberRole memberRole;
 
     @Builder(builderMethodName = "createMember")
-    public Member(String email, String password, String username, String nickName,
+    public Member(String email, String password, String username, String nickname,
                   String phoneNumber, LocalDate birth, String degree, String score, MemberRole memberRole) {
         this.email = email;
         this.password = password;
         this.username = username;
-        this.nickName = nickName;
+        this.nickname = nickname;
         this.phoneNumber = phoneNumber;
         this.birth = birth;
         this.degree = degree;
