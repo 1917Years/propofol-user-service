@@ -26,7 +26,7 @@ class MemberTest {
         Member member = Member.createMember()
                 .username("jiwon")
                 .nickname("jiwon123!")
-                .memberRole(MemberRole.BASIC)
+                .authority(Authority.USER_BASIC)
                 .birth(LocalDate.now())
                 .degree("숭실대")
                 .email("jj@naver.com")
@@ -41,6 +41,6 @@ class MemberTest {
 
         // then
         Member findMember = memberRepository.findById(member.getId()).get();
-        assertThat(findMember.getMemberRole()).isEqualTo(MemberRole.BASIC);
+        assertThat(findMember.getAuthority()).isEqualTo(Authority.USER_BASIC);
     }
 }
