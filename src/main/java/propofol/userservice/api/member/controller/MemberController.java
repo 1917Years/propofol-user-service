@@ -4,14 +4,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import propofol.userservice.api.exception.dto.ErrorDetailDto;
 import propofol.userservice.api.exception.dto.ErrorDto;
-import propofol.userservice.api.member.controller.dto.FindMemberDto;
+import propofol.userservice.api.member.controller.dto.MemberResponseDto;
 import propofol.userservice.api.member.controller.dto.SaveMemberDto;
 import propofol.userservice.domain.member.entity.Member;
-import propofol.userservice.domain.member.entity.MemberRole;
+import propofol.userservice.domain.member.entity.Authority;
 import propofol.userservice.domain.member.service.MemberService;
 
 import javax.servlet.http.HttpServletResponse;
@@ -21,15 +22,22 @@ import java.time.format.DateTimeFormatter;
 @RestController
 @RequiredArgsConstructor
 @Slf4j
+@RequestMapping("/api/v1")
 public class MemberController {
 
     private final MemberService memberService;
     private final ModelMapper modelMapper;
+    private final BCryptPasswordEncoder encoder;
+
+    @GetMapping("/health-check")
+    public String health(){
+        return "Working!!";
+    }
 
     @GetMapping("/users/{email}")
-    public FindMemberDto getMemberByEmail(@PathVariable String email){
+    public MemberResponseDto getMemberByEmail(@PathVariable String email){
         Member findMember = memberService.getMemberByEmail(email);
-        return modelMapper.map(findMember, FindMemberDto.class);
+        return modelMapper.map(findMember, MemberResponseDto.class);
     }
 
     @PostMapping("/users")
@@ -49,14 +57,14 @@ public class MemberController {
 
         Member member = Member.createMember()
                 .email(saveMemberDto.getEmail())
-                .password(saveMemberDto.getPassword())
+                .password(encoder.encode(saveMemberDto.getPassword()))
                 .nickname(saveMemberDto.getNickname())
                 .username(saveMemberDto.getUsername())
                 .birth(date)
                 .degree(saveMemberDto.getDegree())
                 .phoneNumber(saveMemberDto.getPhoneNumber())
                 .score(saveMemberDto.getScore())
-                .memberRole(MemberRole.BASIC)
+                .authority(Authority.USER_BASIC)
                 .build();
 
         memberService.saveMember(member);
