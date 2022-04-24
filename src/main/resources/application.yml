@@ -15,7 +15,8 @@ spring:
       settings:
         web-allow-others: true
       path: /h2-console
-
+가  config:
+    import: application-secret.yml
 
   jpa:
     hibernate:
