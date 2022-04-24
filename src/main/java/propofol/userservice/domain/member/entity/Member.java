@@ -29,11 +29,11 @@ public class Member extends BaseEntity{
     private String score; // 학점
 
     @Enumerated(value = EnumType.STRING)
-    private MemberRole memberRole;
+    private Authority authority;
 
     @Builder(builderMethodName = "createMember")
     public Member(String email, String password, String username, String nickname,
-                  String phoneNumber, LocalDate birth, String degree, String score, MemberRole memberRole) {
+                  String phoneNumber, LocalDate birth, String degree, String score, Authority authority) {
         this.email = email;
         this.password = password;
         this.username = username;
@@ -42,6 +42,6 @@ public class Member extends BaseEntity{
         this.birth = birth;
         this.degree = degree;
         this.score = score;
-        this.memberRole = memberRole;
+        this.authority = authority;
     }
 }
