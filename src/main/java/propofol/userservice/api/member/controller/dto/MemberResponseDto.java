@@ -10,7 +10,7 @@ import java.time.LocalDate;
 @Data
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
-public class FindMemberDto {
+public class MemberResponseDto {
     private String email;
     private String username;
     private String nickname;
