@@ -40,7 +40,7 @@ public class MemberController {
         return modelMapper.map(findMember, MemberResponseDto.class);
     }
 
-    @PostMapping("/users")
+    @PostMapping("/join")
     public Object saveMember(@Validated @RequestBody SaveMemberDto saveMemberDto, HttpServletResponse response){
         ErrorDto errorDto = new ErrorDto();
         checkDuplicate(saveMemberDto, errorDto);
