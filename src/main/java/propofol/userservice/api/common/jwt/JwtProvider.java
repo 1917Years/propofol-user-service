@@ -64,14 +64,14 @@ public class JwtProvider {
     public Authentication getUserInfo(String token){
         JwtParser jwtParser = Jwts.parserBuilder().setSigningKey(key).build();
         Claims claims = jwtParser.parseClaimsJws(token).getBody();
-        String userEmail = claims.getSubject();
+        String memberId = claims.getSubject();
         String authority = claims.get("role").toString();
 
         Collection<? extends GrantedAuthority> at = Arrays.stream(authority.split(","))
                 .map(role -> new SimpleGrantedAuthority(role))
                 .collect(Collectors.toList());
 
-        UserDetails principal = new User(userEmail, "", at);
+        UserDetails principal = new User(memberId, "", at);
 
 
         return new UsernamePasswordAuthenticationToken(principal, "", at);
