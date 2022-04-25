@@ -24,7 +24,6 @@ public class AuthService {
                 new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword());
 
         try {
-
             Authentication authenticate = authenticationManager.authenticate(authenticationToken);
             return jwtHandler.createJwt(authenticate);
 
@@ -37,6 +36,10 @@ public class AuthService {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             }else if(exception instanceof BadCredentialsException){
                 errorDto.setMessage("패스워드 오류!");
+                errorDto.setStatus(HttpStatus.BAD_REQUEST.value());
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            }else{
+                errorDto.setMessage(exception.getMessage());
                 errorDto.setStatus(HttpStatus.BAD_REQUEST.value());
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             }
