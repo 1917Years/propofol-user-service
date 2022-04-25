@@ -20,8 +20,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class JwtProvider {
 
-    @Value("${test}")
-    private String test;
     private final Environment env;
     private Key key;
 
