@@ -7,10 +7,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import propofol.userservice.api.common.annotation.Token;
 import propofol.userservice.api.common.exception.dto.ErrorDetailDto;
 import propofol.userservice.api.common.exception.dto.ErrorDto;
 import propofol.userservice.api.member.controller.dto.MemberResponseDto;
 import propofol.userservice.api.member.controller.dto.SaveMemberDto;
+import propofol.userservice.domain.exception.NotFoundMember;
 import propofol.userservice.domain.member.entity.Member;
 import propofol.userservice.domain.member.entity.Authority;
 import propofol.userservice.domain.member.service.MemberService;
@@ -34,9 +36,11 @@ public class MemberController {
         return "Working!!";
     }
 
-    @GetMapping("/users/{email}")
-    public MemberResponseDto getMemberByEmail(@PathVariable String email){
-        Member findMember = memberService.getMemberByEmail(email);
+    @GetMapping("/members")
+    public MemberResponseDto getMemberByEmail(@Token Long memberId){
+        Member findMember = memberService.getMemberById(memberId).orElseThrow(() -> {
+            throw new NotFoundMember("회원을 찾을 수 없습니다.");
+        });
         return modelMapper.map(findMember, MemberResponseDto.class);
     }
 
