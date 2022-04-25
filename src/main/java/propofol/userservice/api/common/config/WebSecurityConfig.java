@@ -1,4 +1,4 @@
-package propofol.userservice.api.config;
+package propofol.userservice.api.common.config;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +13,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import propofol.userservice.api.fliter.PreFilter;
+import propofol.userservice.api.common.fliter.PreFilter;
 
 @Configuration
 @EnableWebSecurity

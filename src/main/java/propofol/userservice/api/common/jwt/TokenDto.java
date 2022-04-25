@@ -1,4 +1,4 @@
-package propofol.userservice.api.jwt;
+package propofol.userservice.api.common.jwt;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;

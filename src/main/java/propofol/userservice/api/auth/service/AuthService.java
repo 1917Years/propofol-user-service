@@ -7,8 +7,8 @@ import org.springframework.security.authentication.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import propofol.userservice.api.auth.controller.dto.LoginRequestDto;
-import propofol.userservice.api.exception.dto.ErrorDto;
-import propofol.userservice.api.jwt.JwtProvider;
+import propofol.userservice.api.common.exception.dto.ErrorDto;
+import propofol.userservice.api.common.jwt.JwtProvider;
 
 import javax.servlet.http.HttpServletResponse;
 

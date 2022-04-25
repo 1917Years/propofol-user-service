@@ -1,4 +1,4 @@
-package propofol.userservice.api.config;
+package propofol.userservice.api.common.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;

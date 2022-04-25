@@ -1,4 +1,4 @@
-package propofol.userservice.api.jwt;
+package propofol.userservice.api.common.jwt;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtParser;
