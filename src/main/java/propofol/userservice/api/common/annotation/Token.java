@@ -1,4 +1,4 @@
-가package propofol.userservice.api.common.annotation;
+package propofol.userservice.api.common.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
