@@ -2,6 +2,7 @@ package propofol.userservice.api.auth.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,7 +21,7 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public Object login(@RequestBody LoginRequestDto loginDto, HttpServletResponse response){
+    public Object login(@Validated @RequestBody LoginRequestDto loginDto, HttpServletResponse response){
         return authService.propofolLogin(loginDto, response);
     }
 
