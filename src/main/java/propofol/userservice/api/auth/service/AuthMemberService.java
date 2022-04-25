@@ -32,6 +32,6 @@ public class AuthMemberService implements UserDetailsService {
 
         GrantedAuthority grantedAuthority = new SimpleGrantedAuthority(findMember.getAuthority().toString());
 
-        return new User(findMember.getEmail(), findMember.getPassword(), Collections.singleton(grantedAuthority));
+        return new User(String.valueOf(findMember.getId()), findMember.getPassword(), Collections.singleton(grantedAuthority));
     }
 }
