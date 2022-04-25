@@ -7,12 +7,19 @@ import propofol.userservice.domain.exception.NotFoundMember;
 import propofol.userservice.domain.member.entity.Member;
 import propofol.userservice.domain.member.repository.MemberRepository;
 
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class MemberServiceImpl implements MemberService{
 
     private final MemberRepository memberRepository;
+
+    @Override
+    public Optional<Member> getMemberById(Long id) {
+        return memberRepository.findById(id);
+    }
 
     @Override
     public Member getMemberByEmail(String email) {
