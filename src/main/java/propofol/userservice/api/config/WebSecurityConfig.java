@@ -9,15 +9,19 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import propofol.userservice.api.fliter.PreFilter;
 
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
 @Slf4j
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+
+    private final PreFilter preFilter;
 
     @Bean
     @Override
@@ -35,7 +39,10 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .and().cors();
 
         http
-                .authorizeHttpRequests().antMatchers("/**").permitAll();
+//                .authorizeHttpRequests().antMatchers("/**").permitAll()
+                .authorizeRequests().antMatchers("/api/v1/users/**").authenticated()
+                .and()
+                .addFilterBefore(preFilter, UsernamePasswordAuthenticationFilter.class);
 
         http.headers().frameOptions().disable(); // h2-console을 보기 위한 설정
     }
