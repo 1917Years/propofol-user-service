@@ -2,8 +2,11 @@ package propofol.userservice.domain.member.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import propofol.userservice.domain.exception.NotFoundMember;
+import propofol.userservice.domain.member.service.dto.UpdateMemberDto;
 import propofol.userservice.domain.member.entity.Member;
 import propofol.userservice.domain.member.repository.MemberRepository;
 
@@ -11,10 +14,12 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 @Slf4j
 public class MemberServiceImpl implements MemberService{
 
     private final MemberRepository memberRepository;
+    private final BCryptPasswordEncoder encoder;
 
     @Override
     public Optional<Member> getMemberById(Long id) {
@@ -47,4 +52,25 @@ public class MemberServiceImpl implements MemberService{
     public void saveMember(Member member) {
         memberRepository.save(member);
     }
+
+    @Override
+    @Transactional
+    public void updateMember(UpdateMemberDto dto, Long memberId) {
+        Member findMember = getMemberById(memberId).orElseThrow(() -> {
+            throw new NotFoundMember("회원을 찾을 수 없습니다.");
+        });
+
+        String password = dto.getPassword();
+        String nickname = dto.getNickname();
+        String degree = dto.getDegree();
+        String score = dto.getScore();
+        String phoneNumber = dto.getPhoneNumber();
+
+        if(password != null){
+            password = encoder.encode(password);
+        }
+
+        findMember.update(nickname, degree, score, password, phoneNumber);
+    }
+
 }

@@ -3,11 +3,12 @@ package propofol.userservice.api.member.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import propofol.userservice.api.common.annotation.Token;
 import propofol.userservice.api.member.controller.dto.MemberResponseDto;
+import propofol.userservice.api.member.controller.dto.UpdateRequestDto;
 import propofol.userservice.domain.exception.NotFoundMember;
+import propofol.userservice.domain.member.service.dto.UpdateMemberDto;
 import propofol.userservice.domain.member.entity.Member;
 import propofol.userservice.domain.member.service.MemberService;
 
@@ -33,5 +34,11 @@ public class MemberController {
         return modelMapper.map(findMember, MemberResponseDto.class);
     }
 
+    @PostMapping("/update")
+    public String updateMember(@RequestBody UpdateRequestDto dto, @Token Long memberId){
+        UpdateMemberDto memberDto = modelMapper.map(dto, UpdateMemberDto.class);
+        memberService.updateMember(memberDto, memberId);
+        return "ok";
+    }
 
 }

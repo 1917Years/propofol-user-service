@@ -44,4 +44,13 @@ public class Member extends BaseEntity{
         this.score = score;
         this.authority = authority;
     }
+
+    public void update(String nickname, String degree, String score, String password, String phoneNumber){
+        if(nickname != null) this.nickname = nickname;
+        if(degree != null) this.degree = degree;
+        if(score != null) this.score = score;
+        if(password != null) this.password = password;
+        if(phoneNumber != null) this.phoneNumber = phoneNumber;
+    }
+
 }
