@@ -58,7 +58,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         config.addAllowedOriginPattern("*"); // 모든 IP 응답 허용
         config.addAllowedHeader("*"); // 모든 헤더에 응답을 허용
         config.addAllowedMethod("*"); // 모든 post, get, delete, fetch 허용
-        source.registerCorsConfiguration("/api/**", config);
+        source.registerCorsConfiguration("/**", config);
 
         return source;
     }
