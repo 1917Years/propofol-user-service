@@ -10,6 +10,7 @@ public interface MemberService {
     Member getMemberByEmail(String email);
     Boolean checkDuplicateByNickname(String nickname);
     Boolean checkDuplicateByEmail(String email);
+    Boolean isExistByEmail(String email);
 
     void saveMember(Member member);
 
