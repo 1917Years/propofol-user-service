@@ -5,6 +5,7 @@ import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -14,7 +15,9 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
+import propofol.userservice.api.common.properties.JwtProperties;
 
+import javax.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Arrays;
@@ -24,19 +27,16 @@ import java.util.stream.Collectors;
 
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class JwtProvider {
 
-    private final Key key;
-    private final String expirationTime;
-    private final String type;
+    private final JwtProperties jwtProperties;
+    private Key key;
 
-    public JwtProvider(@Value("${token.secret}") String secret,
-                       @Value("${token.expiration_time}") String expirationTime,
-                       @Value("${token.type}") String type) {
-        byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
-        this.key = Keys.hmacShaKeyFor(keyBytes);
-        this.expirationTime = expirationTime;
-        this.type = type;
+    @PostConstruct
+    private void createKey() {
+        byte[] keyBytes = jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8);
+        key = Keys.hmacShaKeyFor(keyBytes);
     }
 
     public TokenDto createJwt(Authentication authentication){
@@ -44,7 +44,7 @@ public class JwtProvider {
                 .map(authority -> authority.getAuthority()).collect(Collectors.joining(", "));
 
         Date expirationDate = new Date(System.currentTimeMillis()
-                + Long.parseLong(expirationTime));
+                + Long.parseLong(jwtProperties.getExpirationTime()));
 
         String token = Jwts.builder()
                 .setSubject(authentication.getName())
@@ -54,7 +54,7 @@ public class JwtProvider {
                 .compact();
 
         return TokenDto.createTokenDto()
-                .type(type)
+                .type(jwtProperties.getType())
                 .accessToken(token)
                 .refreshToken(null)
                 .expirationDate(expirationDate.getTime())
