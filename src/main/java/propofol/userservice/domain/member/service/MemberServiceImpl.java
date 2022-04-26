@@ -49,6 +49,12 @@ public class MemberServiceImpl implements MemberService{
     }
 
     @Override
+    public Boolean isExistByEmail(String email) {
+        Member findMember = memberRepository.findExistByEmail(email);
+        return findMember == null ? false : true;
+    }
+
+    @Override
     public void saveMember(Member member) {
         memberRepository.save(member);
     }
