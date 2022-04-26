@@ -18,11 +18,10 @@ public class Member extends BaseEntity{
     private String email; // 아이디
     @Column(nullable = false)
     private String password; // 비밀번호
-    @Column(nullable = false, updatable = false)
+    @Column(updatable = false)
     private String username; // 사용자 이름(성명)
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private String nickname; // 별명
-    @Column(nullable = false)
     private String phoneNumber;
     private LocalDate birth;
     private String degree; // 학력
