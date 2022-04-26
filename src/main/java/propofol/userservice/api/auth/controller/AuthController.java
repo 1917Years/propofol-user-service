@@ -5,10 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import propofol.userservice.api.auth.controller.dto.LoginRequestDto;
 import propofol.userservice.api.auth.service.AuthService;
 import propofol.userservice.api.common.exception.dto.ErrorDetailDto;
@@ -24,7 +21,7 @@ import java.time.format.DateTimeFormatter;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/auth")
+@RequestMapping("auth")
 @Slf4j
 public class AuthController {
 
@@ -38,6 +35,7 @@ public class AuthController {
     }
 
     @PostMapping("/join")
+    @ResponseStatus(HttpStatus.CREATED)
     public Object saveMember(@Validated @RequestBody SaveMemberDto saveMemberDto, HttpServletResponse response){
         ErrorDto errorDto = new ErrorDto();
         checkDuplicate(saveMemberDto, errorDto);
@@ -56,7 +54,7 @@ public class AuthController {
 
         memberService.saveMember(member);
 
-        return "회원 가입 성공!";
+        return "ok";
     }
 
     private Member createMember(SaveMemberDto saveMemberDto, LocalDate date) {
