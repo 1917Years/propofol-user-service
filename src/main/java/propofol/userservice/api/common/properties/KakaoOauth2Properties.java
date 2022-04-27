@@ -5,7 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.ConstructorBinding;
 
 @Getter
-@ConfigurationProperties(prefix = "oauth.provider.kakao")
+@ConfigurationProperties(prefix = "oauth2.provider.kakao")
 @ConstructorBinding
 public class KakaoOauth2Properties {
     private final String getTokenUri;
