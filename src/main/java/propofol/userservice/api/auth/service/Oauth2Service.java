@@ -50,7 +50,6 @@ public class Oauth2Service {
 
     private Authentication createAuthenticate(KakaoUserInfoDto userInfo) {
         String email = "kakao" + userInfo.getId() + "@kakao.com";
-        System.out.println("email = " + email);
         String password = encoder.encode(kakao.getClientSecret());
 
         if(!memberService.isExistByEmail(email)){
