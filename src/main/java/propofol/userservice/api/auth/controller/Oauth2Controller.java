@@ -20,7 +20,6 @@ public class Oauth2Controller {
     @GetMapping("/kakao/login")
     public TokenDto kakaoLogin(@RequestParam String code){
         TokenDto token = oauth2Service.getToken(code);
-        System.out.println("token = " + token);
         return token;
     }
 }
