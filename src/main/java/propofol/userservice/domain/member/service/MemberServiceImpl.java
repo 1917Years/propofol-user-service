@@ -10,16 +10,17 @@ import propofol.userservice.domain.member.service.dto.UpdateMemberDto;
 import propofol.userservice.domain.member.entity.Member;
 import propofol.userservice.domain.member.repository.MemberRepository;
 
+import javax.persistence.EntityManager;
 import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 @Slf4j
 public class MemberServiceImpl implements MemberService{
 
     private final MemberRepository memberRepository;
     private final BCryptPasswordEncoder encoder;
+    private final EntityManager em;
 
     @Override
     public Optional<Member> getMemberById(Long id) {
@@ -79,4 +80,13 @@ public class MemberServiceImpl implements MemberService{
         findMember.update(nickname, degree, score, password, phoneNumber);
     }
 
+    @Override
+    @Transactional
+    public void updatePassword(String email, String password) {
+        Member findMember = getMemberByEmail(email);
+
+        // TODO: 이메일 인증
+
+        findMember.updatePassword(encoder.encode(password));
+    }
 }

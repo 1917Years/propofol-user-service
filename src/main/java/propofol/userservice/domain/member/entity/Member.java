@@ -1,6 +1,7 @@
 package propofol.userservice.domain.member.entity;
 
 import lombok.*;
+import org.hibernate.annotations.DynamicUpdate;
 
 import javax.persistence.*;
 import java.time.LocalDate;
@@ -8,6 +9,7 @@ import java.time.LocalDate;
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
+@DynamicUpdate
 public class Member extends BaseEntity{
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -50,6 +52,10 @@ public class Member extends BaseEntity{
         if(score != null) this.score = score;
         if(password != null) this.password = password;
         if(phoneNumber != null) this.phoneNumber = phoneNumber;
+    }
+
+    public void updatePassword(String password){
+        this.password = password;
     }
 
 }
