@@ -11,6 +11,7 @@ import propofol.userservice.api.auth.service.AuthService;
 import propofol.userservice.api.common.exception.dto.ErrorDetailDto;
 import propofol.userservice.api.common.exception.dto.ErrorDto;
 import propofol.userservice.api.member.controller.dto.SaveMemberDto;
+import propofol.userservice.api.auth.controller.dto.UpdatePasswordRequestDto;
 import propofol.userservice.domain.member.entity.Authority;
 import propofol.userservice.domain.member.entity.Member;
 import propofol.userservice.domain.member.service.MemberService;
@@ -56,6 +57,17 @@ public class AuthController {
 
         return "ok";
     }
+
+    /**
+     * 기능 : 비밀번호 변경
+     */
+    @PostMapping("/updatePassword")
+    public String updatePassword(@RequestBody UpdatePasswordRequestDto requestDto){
+        memberService.updatePassword(requestDto.getEmail(), requestDto.getPassword());
+        return "ok";
+    }
+
+
 
     private Member createMember(SaveMemberDto saveMemberDto, LocalDate date) {
         Member member = Member.createMember()
