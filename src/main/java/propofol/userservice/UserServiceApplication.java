@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.client.RestTemplate;
 
+// user-service
 @SpringBootApplication
 @EnableJpaAuditing
 @ConfigurationPropertiesScan(basePackages = "propofol.userservice.api.common.properties")
