@@ -79,7 +79,7 @@ public class AuthController {
                 .degree(saveMemberDto.getDegree())
                 .phoneNumber(saveMemberDto.getPhoneNumber())
                 .score(saveMemberDto.getScore())
-                .authority(Authority.USER_BASIC)
+                .authority(Authority.ROLE_USER)
                 .build();
         return member;
     }

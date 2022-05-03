@@ -62,7 +62,7 @@ public class Oauth2Service {
                     .nickname(null)
                     .username(null)
                     .birth(null)
-                    .authority(Authority.USER_BASIC)
+                    .authority(Authority.ROLE_USER)
                     .build();
             memberService.saveMember(member);
         }
