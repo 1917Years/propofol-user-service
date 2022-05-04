@@ -16,6 +16,7 @@ import propofol.userservice.api.common.exception.dto.ErrorDetailDto;
 import propofol.userservice.api.common.exception.dto.ErrorDto;
 import propofol.userservice.api.common.jwt.JwtProvider;
 import propofol.userservice.api.common.jwt.TokenDto;
+import propofol.userservice.api.member.controller.dto.ResponseDto;
 import propofol.userservice.api.member.controller.dto.SaveMemberDto;
 import propofol.userservice.api.auth.controller.dto.UpdatePasswordRequestDto;
 import propofol.userservice.domain.member.entity.Authority;
@@ -37,21 +38,27 @@ public class AuthController {
     private final BCryptPasswordEncoder encoder;
 
     @PostMapping("/login")
-    public Object login(@Validated @RequestBody LoginRequestDto loginDto, HttpServletResponse response){
-        return authService.propofolLogin(loginDto, response);
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto login(@Validated @RequestBody LoginRequestDto loginDto, HttpServletResponse response){
+        Object result = authService.propofolLogin(loginDto, response);
+        if(result instanceof ErrorDto){
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            return new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), "fail", "로그인 실패", result);
+        }else{
+            return new ResponseDto<>(HttpStatus.OK.value(), "success", "로그인 성공!", result);
+        }
     }
 
     @PostMapping("/join")
     @ResponseStatus(HttpStatus.CREATED)
-    public Object saveMember(@Validated @RequestBody SaveMemberDto saveMemberDto, HttpServletResponse response){
+    public ResponseDto saveMember(@Validated @RequestBody SaveMemberDto saveMemberDto, HttpServletResponse response){
         ErrorDto errorDto = new ErrorDto();
         checkDuplicate(saveMemberDto, errorDto);
 
         if(errorDto.getErrors().size() != 0){
-            errorDto.setStatus(HttpStatus.BAD_REQUEST.value());
-            errorDto.setMessage("중복 오류!");
+            errorDto.setErrorMessage("중복 오류!");
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            return errorDto;
+            return new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), "fail", "회원 저장 실패", errorDto);
         }
 
         String birth = saveMemberDto.getMemberBirth();
@@ -61,25 +68,30 @@ public class AuthController {
 
         memberService.saveMember(member);
 
-        return "ok";
+        return new ResponseDto<>(HttpStatus.CREATED.value(), "success", "회원 저장 성공!", "ok");
     }
 
     /**
      * 기능 : 비밀번호 변경
      */
     @PostMapping("/updatePassword")
-    public String updatePassword(@RequestBody UpdatePasswordRequestDto requestDto){
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto updatePassword(@RequestBody UpdatePasswordRequestDto requestDto){
         memberService.updatePassword(requestDto.getEmail(), requestDto.getPassword());
-        return "ok";
+        return new ResponseDto<>(HttpStatus.OK.value(), "success", "패스워드 변경 성공!", "ok");
     }
 
     @GetMapping("/refresh")
-    public Object checkRefreshToken(@RequestHeader(HttpHeaders.AUTHORIZATION) String token,
-            @RequestHeader("refresh-token") String refreshToken){
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto checkRefreshToken(@RequestHeader(HttpHeaders.AUTHORIZATION) String token,
+                                         @RequestHeader("refresh-token") String refreshToken,
+                                         HttpServletResponse response){
         Member refreshMember = memberService.getRefreshMember(refreshToken);
         // access-token 만료, refresh-token 만료X, refresh-token db와 같을 때
         if(jwtProvider.isTokenValid(token)){
-            return new ResponseEntity("Valid access-token", HttpStatus.BAD_REQUEST);
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            return new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), "fail",
+                    "토큰 재발급 실패", "Valid access-token");
         }
 
         if(jwtProvider.isRefreshTokenValid(refreshToken)
@@ -87,10 +99,13 @@ public class AuthController {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             TokenDto tokenDto = jwtProvider.createJwt(authentication);
             memberService.changeRefreshToken(refreshMember, tokenDto.getRefreshToken());
-            return tokenDto;
+            return new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), "success",
+                    "토큰 재발급 성공!", tokenDto);
         }
 
-        return new ResponseEntity("Please ReLogin.", HttpStatus.BAD_REQUEST);
+        response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+        return new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), "fail",
+                "토큰 재발급 실패", "Please Relogin.");
     }
 
 

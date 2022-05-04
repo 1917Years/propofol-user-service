@@ -40,17 +40,11 @@ public class AuthService {
             log.info("login Error = {}", exception.getMessage());
             ErrorDto errorDto = new ErrorDto();
             if(exception instanceof AuthenticationServiceException) {
-                errorDto.setMessage("회원을 찾을 수 없습니다.");
-                errorDto.setStatus(HttpStatus.BAD_REQUEST.value());
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                errorDto.setErrorMessage("회원을 찾을 수 없습니다.");
             }else if(exception instanceof BadCredentialsException){
-                errorDto.setMessage("패스워드 오류!");
-                errorDto.setStatus(HttpStatus.BAD_REQUEST.value());
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                errorDto.setErrorMessage("패스워드 오류!");
             }else{
-                errorDto.setMessage(exception.getMessage());
-                errorDto.setStatus(HttpStatus.BAD_REQUEST.value());
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                errorDto.setErrorMessage(exception.getMessage());
             }
             return errorDto;
         }

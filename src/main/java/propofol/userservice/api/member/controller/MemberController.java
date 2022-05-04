@@ -3,6 +3,7 @@ package propofol.userservice.api.member.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import propofol.userservice.api.common.annotation.Token;
 import propofol.userservice.api.member.controller.dto.*;
@@ -32,44 +33,53 @@ public class MemberController {
      * 회원 조회
      */
     @GetMapping
-    public MemberResponseDto getMemberByMemberId(@Token Long memberId){
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto getMemberByMemberId(@Token Long memberId){
         Member findMember = memberService.getMemberById(memberId).orElseThrow(() -> {
             throw new NotFoundMember("회원을 찾을 수 없습니다.");
         });
-        return modelMapper.map(findMember, MemberResponseDto.class);
+        return new ResponseDto<>(HttpStatus.OK.value(), "success",
+                "회원 조회 성공!", modelMapper.map(findMember, MemberResponseDto.class));
     }
 
     /**
      * 회원 수정
      */
     @PostMapping("/update")
-    public String updateMember(@RequestBody UpdateRequestDto dto, @Token Long memberId){
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto updateMember(@RequestBody UpdateRequestDto dto, @Token Long memberId){
         UpdateMemberDto memberDto = modelMapper.map(dto, UpdateMemberDto.class);
         memberService.updateMember(memberDto, memberId);
-        return "ok";
+        return new ResponseDto<>(HttpStatus.OK.value(), "success",
+                "회원 수정 성공!", "ok");
     }
 
     /**
      * 회원 게시글 가져오기
      */
     @GetMapping("/myBoards")
-    public MemberBoardsResponseDto getMyBoards(@RequestParam Integer page,
-                                               @RequestHeader(name = "Authorization") String token){
-        return memberBoardService.getMyBoards(page, token);
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto getMyBoards(@RequestParam Integer page,
+                                   @RequestHeader(name = "Authorization") String token){
+        return new ResponseDto<>(HttpStatus.OK.value(), "success",
+                "회원 게시글 조회 성공!", memberBoardService.getMyBoards(page, token));
     }
 
     /**
      * 회원 스트릭 가져오기
      */
     @GetMapping("/streak")
-    public StreakResponseDto getStreaks(@Token Long memberId){
-        return getStreakResponseDto(memberId);
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto getStreaks(@Token Long memberId){
+        return new ResponseDto<>(HttpStatus.OK.value(), "success",
+                "회원 스트릭 조회 성공!", getStreakResponseDto(memberId));
     }
 
     /**
      * 스트릭 저장
      */
     @PostMapping("/streak")
+    @ResponseStatus(HttpStatus.OK)
     public void saveStreak(@Token Long memberId,
                            @RequestBody StreakRequestDto requestDto){
         Streak streak = createStreak(requestDto);

@@ -35,7 +35,7 @@ public class Oauth2Service {
     public TokenDto getToken(String code){
 
         ResponseEntity<KakaoTokenResponseDto> tokenResponse = getAccessToken(code);
-        if(tokenResponse.getStatusCode() != HttpStatus.OK) throw new RuntimeException("로그인 오류 발생");
+        if(tokenResponse.getStatusCode() != HttpStatus.OK) throw new RuntimeException("카카오 로그인 오류 발생");
 
         KakaoTokenResponseDto responseBody = tokenResponse.getBody();
         String accessToken = responseBody.getAccessToken();
