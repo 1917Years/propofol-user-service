@@ -89,4 +89,17 @@ public class MemberServiceImpl implements MemberService{
 
         findMember.updatePassword(encoder.encode(password));
     }
+
+    @Override
+    public Member getRefreshMember(String refreshToken) {
+        return memberRepository.findByRefreshToken(refreshToken).orElseThrow(() -> {
+            throw new NotFoundMember("회원을 찾을 수 없습니다.");
+        });
+    }
+
+    @Override
+    @Transactional
+    public void changeRefreshToken(Member refreshMember, String refreshToken) {
+        refreshMember.changeRefreshToken(refreshToken);
+    }
 }

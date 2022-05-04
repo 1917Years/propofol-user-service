@@ -26,8 +26,9 @@ public class PreFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
 
         String authorization = request.getHeader("Authorization");
+        String refreshToken = request.getHeader("refresh-token");
 
-        if(authorization != null && authorization.startsWith("Bearer ")){
+        if(refreshToken == null && authorization != null && authorization.startsWith("Bearer ")){
             String token = authorization.replace("Bearer ", "").toString();
             Authentication authentication = jwtProvider.getUserInfo(token);
             SecurityContextHolder.getContext().setAuthentication(authentication);

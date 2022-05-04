@@ -6,9 +6,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import propofol.userservice.api.auth.controller.dto.LoginRequestDto;
 import propofol.userservice.api.common.exception.dto.ErrorDto;
 import propofol.userservice.api.common.jwt.JwtProvider;
+import propofol.userservice.api.common.jwt.TokenDto;
+import propofol.userservice.domain.exception.NotFoundMember;
+import propofol.userservice.domain.member.entity.Member;
+import propofol.userservice.domain.member.service.MemberService;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -18,14 +23,18 @@ import javax.servlet.http.HttpServletResponse;
 public class AuthService {
     private final JwtProvider jwtHandler;
     private final AuthenticationManager authenticationManager;
+    private final MemberService memberService;
 
+    @Transactional
     public Object propofolLogin(LoginRequestDto loginDto, HttpServletResponse response){
         UsernamePasswordAuthenticationToken authenticationToken =
                 new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword());
 
         try {
             Authentication authenticate = authenticationManager.authenticate(authenticationToken);
-            return jwtHandler.createJwt(authenticate);
+            TokenDto tokenDto = jwtHandler.createJwt(authenticate);
+            saveRefreshToken(authenticate, tokenDto);
+            return tokenDto;
 
         }catch (Exception exception){
             log.info("login Error = {}", exception.getMessage());
@@ -46,5 +55,14 @@ public class AuthService {
             return errorDto;
         }
 
+    }
+
+    private void saveRefreshToken(Authentication authenticate, TokenDto tokenDto) {
+        String refreshToken = tokenDto.getRefreshToken();
+        Long id = Long.valueOf(authenticate.getName());
+        Member findMember = memberService.getMemberById(id).orElseThrow(() -> {
+            throw new NotFoundMember("회원을 찾을 수 없습니다.");
+        });
+        findMember.changeRefreshToken(refreshToken);
     }
 }

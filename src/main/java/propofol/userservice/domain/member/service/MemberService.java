@@ -30,4 +30,11 @@ public interface MemberService {
      *  비밀변호 수정
      */
     void updatePassword(String email, String password);
+
+    /**
+     * refreshToken 가져오기
+     */
+    Member getRefreshMember(String refreshToken);
+
+    void changeRefreshToken(Member refreshMember, String refreshToken);
 }

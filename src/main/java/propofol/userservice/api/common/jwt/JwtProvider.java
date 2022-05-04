@@ -1,13 +1,9 @@
 package propofol.userservice.api.common.jwt;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtParser;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -15,6 +11,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
+import propofol.userservice.api.common.exception.ExpiredRefreshTokenException;
 import propofol.userservice.api.common.properties.JwtProperties;
 
 import javax.annotation.PostConstruct;
@@ -56,9 +53,18 @@ public class JwtProvider {
         return TokenDto.createTokenDto()
                 .type(jwtProperties.getType())
                 .accessToken(token)
-                .refreshToken(null)
-                .expirationDate(expirationDate.getTime())
+                .refreshToken(createRefreshToken())
                 .build();
+    }
+
+    public String createRefreshToken(){
+        Date refreshExpirationTime = new Date(System.currentTimeMillis() +
+                Long.parseLong(jwtProperties.getRefreshExpirationTime()));
+
+        return Jwts.builder()
+                .setExpiration(refreshExpirationTime)
+                .signWith(key, SignatureAlgorithm.HS512)
+                .compact();
     }
 
     public Authentication getUserInfo(String token){
@@ -75,5 +81,30 @@ public class JwtProvider {
 
 
         return new UsernamePasswordAuthenticationToken(principal, "", at);
+    }
+
+    public boolean isRefreshTokenValid(String refreshToken){
+        try {
+            JwtParser jwtParser = Jwts.parserBuilder().setSigningKey(key).build();
+            return !jwtParser.parseClaimsJws(refreshToken).getBody().getExpiration().before(new Date());
+        }catch (Exception e){
+            if(e instanceof ExpiredJwtException){
+                throw new ExpiredRefreshTokenException("Please ReLogin.");
+            }
+        }
+        return false;
+    }
+
+    public boolean isTokenValid(String bearerToken){
+        try {
+            String token = bearerToken.replace("Bearer ", "").toString();
+            JwtParser jwtParser = Jwts.parserBuilder().setSigningKey(key).build();
+            return !jwtParser.parseClaimsJws(token).getBody().getExpiration().before(new Date());
+        }catch (Exception e){
+            if(e instanceof ExpiredJwtException){
+                return false;
+            }
+        }
+        return false;
     }
 }

@@ -10,13 +10,11 @@ public class TokenDto {
     private String type;
     private String accessToken;
     private String refreshToken;
-    private Long expirationDate;
 
     @Builder(builderMethodName = "createTokenDto")
-    public TokenDto(String type, String accessToken, String refreshToken, Long expirationDate) {
+    public TokenDto(String type, String accessToken, String refreshToken) {
         this.type = type;
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
-        this.expirationDate = expirationDate;
     }
 }

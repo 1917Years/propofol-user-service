@@ -32,6 +32,12 @@ public class Member extends BaseEntity{
     @Enumerated(value = EnumType.STRING)
     private Authority authority;
 
+    private String refreshToken;
+
+    public void changeRefreshToken(String refreshToken){
+        this.refreshToken = refreshToken;
+    }
+
     @Builder(builderMethodName = "createMember")
     public Member(String email, String password, String username, String nickname,
                   String phoneNumber, LocalDate birth, String degree, String score, Authority authority) {

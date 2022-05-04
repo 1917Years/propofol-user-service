@@ -2,7 +2,11 @@ package propofol.userservice.api.auth.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -10,6 +14,8 @@ import propofol.userservice.api.auth.controller.dto.LoginRequestDto;
 import propofol.userservice.api.auth.service.AuthService;
 import propofol.userservice.api.common.exception.dto.ErrorDetailDto;
 import propofol.userservice.api.common.exception.dto.ErrorDto;
+import propofol.userservice.api.common.jwt.JwtProvider;
+import propofol.userservice.api.common.jwt.TokenDto;
 import propofol.userservice.api.member.controller.dto.SaveMemberDto;
 import propofol.userservice.api.auth.controller.dto.UpdatePasswordRequestDto;
 import propofol.userservice.domain.member.entity.Authority;
@@ -25,9 +31,9 @@ import java.time.format.DateTimeFormatter;
 @RequestMapping("auth")
 @Slf4j
 public class AuthController {
-
     private final MemberService memberService;
     private final AuthService authService;
+    private final JwtProvider jwtProvider;
     private final BCryptPasswordEncoder encoder;
 
     @PostMapping("/login")
@@ -65,6 +71,26 @@ public class AuthController {
     public String updatePassword(@RequestBody UpdatePasswordRequestDto requestDto){
         memberService.updatePassword(requestDto.getEmail(), requestDto.getPassword());
         return "ok";
+    }
+
+    @GetMapping("/refresh")
+    public Object checkRefreshToken(@RequestHeader(HttpHeaders.AUTHORIZATION) String token,
+            @RequestHeader("refresh-token") String refreshToken){
+        Member refreshMember = memberService.getRefreshMember(refreshToken);
+        // access-token 만료, refresh-token 만료X, refresh-token db와 같을 때
+        if(jwtProvider.isTokenValid(token)){
+            return new ResponseEntity("Valid access-token", HttpStatus.BAD_REQUEST);
+        }
+
+        if(jwtProvider.isRefreshTokenValid(refreshToken)
+                && refreshMember.getRefreshToken().equals(refreshToken)){
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            TokenDto tokenDto = jwtProvider.createJwt(authentication);
+            memberService.changeRefreshToken(refreshMember, tokenDto.getRefreshToken());
+            return tokenDto;
+        }
+
+        return new ResponseEntity("Please ReLogin.", HttpStatus.BAD_REQUEST);
     }
 
 
