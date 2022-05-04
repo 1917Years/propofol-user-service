@@ -33,6 +33,13 @@ public class ExceptionAdviceController {
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorDto ExpiredRefreshTokneException(ExpiredRefreshTokenException e){
+        ErrorDto errorDto = createError(e.getMessage(), HttpStatus.BAD_REQUEST);
+        return errorDto;
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorDto validationError(MethodArgumentNotValidException e){
         ErrorDto errorDto = createError("회원 가입 실패!", HttpStatus.BAD_REQUEST);
         e.getFieldErrors().forEach(
