@@ -93,7 +93,7 @@ public class MemberServiceImpl implements MemberService{
     @Override
     public Member getRefreshMember(String refreshToken) {
         return memberRepository.findByRefreshToken(refreshToken).orElseThrow(() -> {
-            throw new NotFoundMember("회원을 찾을 수 없습니다.");
+            throw new NotFoundMember("올바르지 않은 RefreshToken입니다.");
         });
     }
 
