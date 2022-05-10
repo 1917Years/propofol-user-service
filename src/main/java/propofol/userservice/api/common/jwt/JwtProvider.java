@@ -89,7 +89,7 @@ public class JwtProvider {
             return !jwtParser.parseClaimsJws(refreshToken).getBody().getExpiration().before(new Date());
         }catch (Exception e){
             if(e instanceof ExpiredJwtException){
-                throw new ExpiredRefreshTokenException("Please ReLogin.");
+                throw new ExpiredRefreshTokenException("Please Re-Login.");
             }
         }
         return false;

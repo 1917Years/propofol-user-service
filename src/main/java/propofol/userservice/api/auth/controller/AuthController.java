@@ -105,7 +105,7 @@ public class AuthController {
 
         response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         return new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), "fail",
-                "토큰 재발급 실패", "Please Relogin.");
+                "토큰 재발급 실패", "Please Re-Login.");
     }
 
 
