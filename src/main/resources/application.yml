@@ -11,6 +11,9 @@ spring:
   cloud:
     config:
       name: secret
+#  jpa:
+#    hibernate:
+#      ddl-auto: update
 
 logging:
   level:
@@ -22,7 +25,7 @@ eureka:
     register-with-eureka: true
     fetch-registry: true
     service-url:
-      defaultZone: http://ec2-15-164-164-245.ap-northeast-2.compute.amazonaws.com:8761/eureka
+      defaultZone: http://localhost:8761/eureka
      
 wbv:
   dfg: dsfsdafsfsdfd
