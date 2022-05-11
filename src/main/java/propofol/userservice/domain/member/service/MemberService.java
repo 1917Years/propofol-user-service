@@ -9,12 +9,7 @@ public interface MemberService {
     Optional<Member> getMemberById(Long id);
     Member getMemberByEmail(String email);
     Boolean isExistByEmail(String email);
-
-    /**
-     * 닉네임, 이메일 중복 체크
-     */
-    Boolean checkDuplicateByNickname(String nickname);
-    Boolean checkDuplicateByEmail(String email);
+    Boolean isExistByNickname(String nickname);
 
     /**
      * 회원 저장
