@@ -20,9 +20,9 @@ public class ExceptionAdviceController {
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorDto SQLException(ConstraintViolationException e){
-        log.info("Message = {}", e.getMessage());
-        return null;
+    public ResponseDto Exception(Exception e){
+        ErrorDto errorDto = createError(e.getMessage());
+        return new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), "fail", "오류", errorDto);
     }
 
     @ExceptionHandler
