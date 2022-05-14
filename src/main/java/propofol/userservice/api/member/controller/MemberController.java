@@ -5,9 +5,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import propofol.userservice.api.common.annotation.Token;
+import propofol.userservice.api.common.exception.SaveProfileException;
 import propofol.userservice.api.member.controller.dto.*;
 import propofol.userservice.api.member.service.MemberBoardService;
+import propofol.userservice.api.member.service.ProfileService;
 import propofol.userservice.domain.exception.NotFoundMember;
 import propofol.userservice.domain.member.service.FollowingService;
 import propofol.userservice.domain.member.service.dto.UpdateMemberDto;
@@ -16,6 +19,7 @@ import propofol.userservice.domain.member.service.MemberService;
 import propofol.userservice.domain.streak.entity.Streak;
 import propofol.userservice.domain.streak.service.StreakService;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -26,10 +30,17 @@ import java.util.List;
 public class MemberController {
 
     private final MemberService memberService;
+    private final ProfileService profileService;
     private final ModelMapper modelMapper;
     private final MemberBoardService memberBoardService;
     private final StreakService streakService;
     private final FollowingService followingService;
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseDto saveProfileException(SaveProfileException e){
+        return new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), "fail", "프로필 저장 실패", e.getMessage());
+    }
 
     /**
      * 회원 조회
@@ -55,6 +66,30 @@ public class MemberController {
             throw new NotFoundMember("회원 조회 실패");
         });
         return findMember.getNickname();
+    }
+
+    /**
+     * 회원 프로필 수정
+     */
+    @PostMapping("/profile")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto saveMemberProfile(@RequestParam("profile") MultipartFile file,
+                                         @Token Long memberId) throws Exception {
+        return new ResponseDto(HttpStatus.OK.value(), "success", "프로파일 저장 성공",
+                profileService.saveProfile(file,
+                        memberService.getMemberById(memberId).orElseThrow(() -> {
+                    throw new NotFoundMember("회원을 찾을 수 없습니다.");
+        })));
+    }
+
+    /**
+     * 회원 프로필 조회
+     */
+    @GetMapping("/profile")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto getMemberProfile(@Token Long memberId){
+        return new ResponseDto(HttpStatus.OK.value(), "success",
+                "프로필 조회 성공", profileService.getProfile(memberId));
     }
 
     /**
@@ -106,6 +141,21 @@ public class MemberController {
                 .workingDate(requestDto.getDate())
                 .working(1)
                 .build();
+    }
+
+    /**
+     * following 저장
+     */
+    @PostMapping("/following")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto saveFollowing(@RequestBody FollowingSaveRequestDto requestDto,
+                                     @Token Long memberId){
+        Member findMember = memberService.getMemberById(memberId).orElseThrow(() -> {
+            throw new NotFoundMember("회원을 찾을 수 없습니다.");
+        });
+
+        return new ResponseDto(HttpStatus.OK.value(), "success", "Following 성공!",
+                followingService.saveFollowing(findMember, Long.parseLong(requestDto.getFollowingMemberId())));
     }
 
     private StreakResponseDto getStreakResponseDto(Long memberId) {
