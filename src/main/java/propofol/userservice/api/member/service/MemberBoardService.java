@@ -14,6 +14,6 @@ public class MemberBoardService {
     private final TilServiceFeignClient tilServiceFeignClient;
 
     public MemberBoardsResponseDto getMyBoards(Integer page, String token){
-        return tilServiceFeignClient.getMyBoards(token, page);
+        return tilServiceFeignClient.getMyBoards(token, page).orElse(null);
     }
 }
