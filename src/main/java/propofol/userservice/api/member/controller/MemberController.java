@@ -9,6 +9,7 @@ import propofol.userservice.api.common.annotation.Token;
 import propofol.userservice.api.member.controller.dto.*;
 import propofol.userservice.api.member.service.MemberBoardService;
 import propofol.userservice.domain.exception.NotFoundMember;
+import propofol.userservice.domain.member.service.FollowingService;
 import propofol.userservice.domain.member.service.dto.UpdateMemberDto;
 import propofol.userservice.domain.member.entity.Member;
 import propofol.userservice.domain.member.service.MemberService;
@@ -28,6 +29,7 @@ public class MemberController {
     private final ModelMapper modelMapper;
     private final MemberBoardService memberBoardService;
     private final StreakService streakService;
+    private final FollowingService followingService;
 
     /**
      * 회원 조회
@@ -38,8 +40,21 @@ public class MemberController {
         Member findMember = memberService.getMemberById(memberId).orElseThrow(() -> {
             throw new NotFoundMember("회원을 찾을 수 없습니다.");
         });
+
         return new ResponseDto<>(HttpStatus.OK.value(), "success",
                 "회원 조회 성공!", modelMapper.map(findMember, MemberResponseDto.class));
+    }
+
+    /**
+     * 회원 조회 -> 닉네임 반환
+     */
+    @GetMapping("/{memberId}")
+    @ResponseStatus(HttpStatus.OK)
+    public String getMemberNickname(@PathVariable("memberId") Long memberId){
+        Member findMember = memberService.getMemberById(memberId).orElseThrow(() -> {
+            throw new NotFoundMember("회원 조회 실패");
+        });
+        return findMember.getNickname();
     }
 
     /**
