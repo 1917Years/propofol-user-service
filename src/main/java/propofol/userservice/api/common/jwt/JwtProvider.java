@@ -57,6 +57,24 @@ public class JwtProvider {
                 .build();
     }
 
+    public TokenDto createReJwt(String memberId, String memberRole){
+        Date expirationDate = new Date(System.currentTimeMillis()
+                + Long.parseLong(jwtProperties.getExpirationTime()));
+
+        String token = Jwts.builder()
+                .setSubject(memberId)
+                .claim("role", memberRole)
+                .setExpiration(expirationDate)
+                .signWith(key, SignatureAlgorithm.HS512)
+                .compact();
+
+        return TokenDto.createTokenDto()
+                .type(jwtProperties.getType())
+                .accessToken(token)
+                .refreshToken(createRefreshToken())
+                .build();
+    }
+
     public String createRefreshToken(){
         Date refreshExpirationTime = new Date(System.currentTimeMillis() +
                 Long.parseLong(jwtProperties.getRefreshExpirationTime()));
@@ -65,6 +83,12 @@ public class JwtProvider {
                 .setExpiration(refreshExpirationTime)
                 .signWith(key, SignatureAlgorithm.HS512)
                 .compact();
+    }
+
+    public String getUserId(String token){
+        JwtParser jwtParser = Jwts.parserBuilder().setSigningKey(key).build();
+        Claims claims = jwtParser.parseClaimsJws(token).getBody();
+        return claims.getSubject();
     }
 
     public Authentication getUserInfo(String token){
