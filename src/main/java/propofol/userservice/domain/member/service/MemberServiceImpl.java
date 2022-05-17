@@ -61,15 +61,13 @@ public class MemberServiceImpl implements MemberService{
 
         String password = dto.getPassword();
         String nickname = dto.getNickname();
-        String degree = dto.getDegree();
-        String score = dto.getScore();
         String phoneNumber = dto.getPhoneNumber();
 
         if(password != null){
             password = encoder.encode(password);
         }
 
-        findMember.update(nickname, degree, score, password, phoneNumber);
+        findMember.update(nickname, password, phoneNumber);
     }
 
     @Override
