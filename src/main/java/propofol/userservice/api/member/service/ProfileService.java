@@ -117,6 +117,9 @@ public class ProfileService {
     public ProfileResponseDto getProfile(Long memberId) {
         Profile profile = profileRepository.findByMemberId(memberId).orElse(null);
 
-        return new ProfileResponseDto(memberId, getProfileByte(profile.getStoreFileName()), profile.getContentType());
+        if(profile != null)
+            return new ProfileResponseDto(memberId, getProfileByte(profile.getStoreFileName()), profile.getContentType());
+        else
+            return new ProfileResponseDto(memberId,  null, null);
     }
 }
