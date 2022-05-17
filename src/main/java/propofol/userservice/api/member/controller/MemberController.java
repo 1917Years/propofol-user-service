@@ -11,6 +11,7 @@ import propofol.userservice.api.common.exception.SaveProfileException;
 import propofol.userservice.api.member.controller.dto.*;
 import propofol.userservice.api.member.service.MemberBoardService;
 import propofol.userservice.api.member.service.ProfileService;
+import propofol.userservice.domain.exception.ExistFollowingException;
 import propofol.userservice.domain.exception.NotFoundMember;
 import propofol.userservice.domain.member.service.FollowingService;
 import propofol.userservice.domain.member.service.dto.UpdateMemberDto;
@@ -19,7 +20,6 @@ import propofol.userservice.domain.member.service.MemberService;
 import propofol.userservice.domain.streak.entity.Streak;
 import propofol.userservice.domain.streak.service.StreakService;
 
-import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -40,6 +40,12 @@ public class MemberController {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseDto saveProfileException(SaveProfileException e){
         return new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), "fail", "프로필 저장 실패", e.getMessage());
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseDto existFollowingException(ExistFollowingException e){
+        return new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), "fail", "팔로잉 실패", e.getMessage());
     }
 
     /**
@@ -154,8 +160,18 @@ public class MemberController {
             throw new NotFoundMember("회원을 찾을 수 없습니다.");
         });
 
-        return new ResponseDto(HttpStatus.OK.value(), "success", "Following 성공!",
-                followingService.saveFollowing(findMember, Long.parseLong(requestDto.getFollowingMemberId())));
+        return new ResponseDto(HttpStatus.OK.value(), "success", "follow 기능 성공!",
+                followingService.saveFollowing(findMember, requestDto.getFollowingMemberId()));
+    }
+
+    /**
+     * follower 조회
+     */
+    @GetMapping("/follower")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto getFollowers(@Token Long memberId){
+        return new ResponseDto(HttpStatus.OK.value(), "success",
+                "팔로워 조회 성공", followingService.getFollowers(memberId));
     }
 
     private StreakResponseDto getStreakResponseDto(Long memberId) {
