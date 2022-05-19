@@ -7,5 +7,5 @@ import javax.validation.constraints.NotBlank;
 @Data
 public class FollowingSaveRequestDto {
     @NotBlank
-    private Long followingMemberId;
+    private String followingNickname;
 }
