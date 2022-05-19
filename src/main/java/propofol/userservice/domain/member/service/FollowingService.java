@@ -2,8 +2,6 @@ package propofol.userservice.domain.member.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import propofol.userservice.domain.exception.ExistFollowingException;
-import propofol.userservice.domain.exception.SameMemberFollowingException;
 import propofol.userservice.domain.member.entity.Following;
 import propofol.userservice.domain.member.entity.Member;
 import propofol.userservice.domain.member.repository.FollowingRepository;
@@ -14,15 +12,13 @@ public class FollowingService {
 
     private final FollowingRepository followingRepository;
 
-    public String saveFollowing(Member member, Long followingMemberId){
-        if(member.getId() == followingMemberId) throw new SameMemberFollowingException("동일한 사용자 following 요청입니다.");
-
+    public String saveFollowing(Member member, Member followingMember){
         Following findFollowing = followingRepository
-                .findByFollowingMemberIdAndMemberId(followingMemberId, member.getId()).orElse(null);
+                .findByFollowingMemberIdAndMemberId(followingMember.getId(), member.getId()).orElse(null);
 
         if(findFollowing == null){
             Following following = Following.createFollowing()
-                    .followingMemberId(followingMemberId).build();
+                    .followingMemberId(followingMember.getId()).build();
             following.changeMember(member);
 
             followingRepository.save(following);
@@ -32,6 +28,13 @@ public class FollowingService {
             return "팔로잉 취소";
         }
 
+    }
+
+    public boolean isExistFollowing(Member findMember, Member followingMember) {
+        Following findFollowing = followingRepository
+                .findByFollowingMemberIdAndMemberId(followingMember.getId(), findMember.getId()).orElse(null);
+
+        return findFollowing == null ? false : true;
     }
 
     public int getFollowers(Long memberId) {
