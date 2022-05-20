@@ -54,9 +54,6 @@ public class AuthService {
     private void saveRefreshToken(Authentication authenticate, TokenDto tokenDto) {
         String refreshToken = tokenDto.getRefreshToken();
         Long id = Long.valueOf(authenticate.getName());
-        Member findMember = memberService.getMemberById(id).orElseThrow(() -> {
-            throw new NotFoundMember("회원을 찾을 수 없습니다.");
-        });
-        findMember.changeRefreshToken(refreshToken);
+        memberService.getMemberById(id).changeRefreshToken(refreshToken);
     }
 }
