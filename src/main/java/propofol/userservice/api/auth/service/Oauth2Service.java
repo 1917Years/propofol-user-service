@@ -63,6 +63,7 @@ public class Oauth2Service {
                     .username(null)
                     .birth(null)
                     .authority(Authority.ROLE_USER)
+                    .totalRecommend(0L)
                     .build();
             memberService.saveMember(member);
         }

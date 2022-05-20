@@ -156,6 +156,7 @@ public class AuthController {
                 .username(saveMemberDto.getUsername())
                 .phoneNumber(saveMemberDto.getPhoneNumber())
                 .authority(Authority.ROLE_USER)
+                .totalRecommend(0)
                 .build();
         return member;
     }
