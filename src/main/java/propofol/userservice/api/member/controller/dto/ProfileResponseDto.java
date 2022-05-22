@@ -9,6 +9,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ProfileResponseDto {
     private Long memberId;
-    private byte[] profileBytes;
+    private String profileBytes;
     private String profileType;
 }

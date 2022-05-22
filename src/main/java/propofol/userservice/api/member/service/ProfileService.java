@@ -15,6 +15,7 @@ import propofol.userservice.domain.member.entity.Member;
 import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Base64;
 import java.util.UUID;
 
 @Service
@@ -71,7 +72,7 @@ public class ProfileService {
                 getProfileByte(findProfile.getStoreFileName()), findProfile.getContentType());
     }
 
-    private byte[] getProfileByte(String fileName){
+    private String getProfileByte(String fileName){
         String path = getFullPath(getProfileDirPath(), fileName);
         byte[] bytes = null;
 
@@ -84,7 +85,7 @@ public class ProfileService {
             e.printStackTrace();
         }
 
-        return bytes;
+        return Base64.getEncoder().encodeToString(bytes);
     }
 
     private String getFullPath(String profileDirPath, String storeFileName) {
