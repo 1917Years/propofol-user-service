@@ -9,10 +9,9 @@ import org.springframework.web.multipart.MultipartFile;
 import propofol.userservice.api.common.annotation.Token;
 import propofol.userservice.api.common.exception.SaveProfileException;
 import propofol.userservice.api.member.controller.dto.*;
-import propofol.userservice.api.member.service.MemberBoardService;
 import propofol.userservice.api.member.service.ProfileService;
 import propofol.userservice.domain.exception.ExistFollowingException;
-import propofol.userservice.domain.exception.NotFoundMember;
+import propofol.userservice.domain.exception.SameMemberFollowingException;
 import propofol.userservice.domain.member.service.FollowingService;
 import propofol.userservice.domain.member.service.dto.UpdateMemberDto;
 import propofol.userservice.domain.member.entity.Member;
@@ -23,16 +22,15 @@ import propofol.userservice.domain.streak.service.StreakService;
 import java.time.LocalDate;
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
-@Slf4j
 @RequestMapping("/api/v1/members")
 public class MemberController {
 
     private final MemberService memberService;
     private final ProfileService profileService;
     private final ModelMapper modelMapper;
-    private final MemberBoardService memberBoardService;
     private final StreakService streakService;
     private final FollowingService followingService;
 
@@ -54,9 +52,7 @@ public class MemberController {
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     public ResponseDto getMemberByMemberId(@Token Long memberId){
-        Member findMember = memberService.getMemberById(memberId).orElseThrow(() -> {
-            throw new NotFoundMember("회원을 찾을 수 없습니다.");
-        });
+        Member findMember = memberService.getMemberById(memberId);
 
         return new ResponseDto<>(HttpStatus.OK.value(), "success",
                 "회원 조회 성공!", modelMapper.map(findMember, MemberResponseDto.class));
@@ -68,10 +64,7 @@ public class MemberController {
     @GetMapping("/{memberId}")
     @ResponseStatus(HttpStatus.OK)
     public String getMemberNickname(@PathVariable("memberId") Long memberId){
-        Member findMember = memberService.getMemberById(memberId).orElseThrow(() -> {
-            throw new NotFoundMember("회원 조회 실패");
-        });
-        return findMember.getNickname();
+        return memberService.getMemberById(memberId).getNickname();
     }
 
     /**
@@ -82,10 +75,7 @@ public class MemberController {
     public ResponseDto saveMemberProfile(@RequestParam("profile") MultipartFile file,
                                          @Token Long memberId) throws Exception {
         return new ResponseDto(HttpStatus.OK.value(), "success", "프로파일 저장 성공",
-                profileService.saveProfile(file,
-                        memberService.getMemberById(memberId).orElseThrow(() -> {
-                    throw new NotFoundMember("회원을 찾을 수 없습니다.");
-        })));
+                profileService.saveProfile(file, memberService.getMemberById(memberId)));
     }
 
     /**
@@ -99,6 +89,16 @@ public class MemberController {
     }
 
     /**
+     * 댓글 작성한 유저의 프로필 조회 추가
+     */
+    @PostMapping("/commentProfile")
+    @ResponseStatus(HttpStatus.OK)
+    public ProfileResponseDto getCommentMemberProfile(@RequestBody String nickname) {
+        Member findMember = memberService.getMemberByNickname(nickname);
+        return profileService.getProfile(findMember.getId());
+    }
+
+    /**
      * 회원 수정
      */
     @PostMapping("/update")
@@ -108,17 +108,6 @@ public class MemberController {
         memberService.updateMember(memberDto, memberId);
         return new ResponseDto<>(HttpStatus.OK.value(), "success",
                 "회원 수정 성공!", "ok");
-    }
-
-    /**
-     * 회원 게시글 가져오기
-     */
-    @GetMapping("/myBoards")
-    @ResponseStatus(HttpStatus.OK)
-    public ResponseDto getMyBoards(@RequestParam Integer page,
-                                   @RequestHeader(name = "Authorization") String token){
-        return new ResponseDto<>(HttpStatus.OK.value(), "success",
-                "회원 게시글 조회 성공!", memberBoardService.getMyBoards(page, token));
     }
 
     /**
@@ -156,12 +145,15 @@ public class MemberController {
     @ResponseStatus(HttpStatus.OK)
     public ResponseDto saveFollowing(@RequestBody FollowingSaveRequestDto requestDto,
                                      @Token Long memberId){
-        Member findMember = memberService.getMemberById(memberId).orElseThrow(() -> {
-            throw new NotFoundMember("회원을 찾을 수 없습니다.");
-        });
+        Member findMember = memberService.getMemberById(memberId);
+
+        if(findMember.getNickname() == requestDto.getFollowingNickname())
+            throw new SameMemberFollowingException("동일한 사용자 following 요청입니다.");
+
+        Member followingMember = memberService.getMemberByNickname(requestDto.getFollowingNickname());
 
         return new ResponseDto(HttpStatus.OK.value(), "success", "follow 기능 성공!",
-                followingService.saveFollowing(findMember, requestDto.getFollowingMemberId()));
+                followingService.saveFollowing(findMember, followingMember));
     }
 
     /**
@@ -174,10 +166,55 @@ public class MemberController {
                 "팔로워 조회 성공", followingService.getFollowers(memberId));
     }
 
+    /**
+     * 기존 following 여부 확인
+     */
+    @PostMapping("/checkFollowing")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto checkFollowing(@RequestBody FollowingSaveRequestDto requestDto,
+                                      @Token Long memberId) {
+        Member findMember = memberService.getMemberById(memberId);
+
+        Member followingMember = memberService.getMemberByNickname(requestDto.getFollowingNickname());
+
+        boolean flag = followingService.isExistFollowing(findMember, followingMember);
+
+        return new ResponseDto(HttpStatus.OK.value(), "success", "follow 조회 성공!", flag);
+    }
+
+    /**
+     * Member Tag 저장
+     */
+    @PostMapping("/tag")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto saveMemberTags(@Token Long memberId,
+                                      @RequestBody TagIdRequestDto requestDto){
+
+        return new ResponseDto(HttpStatus.OK.value(), "success", "회원 태그 저장 성공",
+                memberService.saveMemberTags(memberId, requestDto.getTagIds()));
+    }
+
+    /**
+     * 회원 추천 수 Plus
+     */
+    @PostMapping("/recommend")
+    public void plusRecommend(@RequestBody RecommendRequestDto requestDto){
+        memberService.plusTotalRecommend(requestDto.getId());
+    }
+
+    /**
+     * 매칭 게시판 회원 추천 조회
+     */
+    @GetMapping("/matchings")
+    public MatchingResponseDto getMatchingData(){
+        return null;
+    }
+
     private StreakResponseDto getStreakResponseDto(Long memberId) {
         StreakResponseDto streakResponseDto = new StreakResponseDto();
         int year = LocalDate.now().getYear();
-        streakResponseDto.setYear(String.format(year + "년"));
+
+        streakResponseDto.setYear(String.valueOf(year));
 
         LocalDate start = LocalDate.of(year, 1, 1);
         LocalDate end = LocalDate.of(year, 12, 31);
@@ -188,6 +225,5 @@ public class MemberController {
         });
         return streakResponseDto;
     }
-
 
 }
