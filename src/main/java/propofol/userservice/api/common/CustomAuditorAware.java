@@ -22,10 +22,7 @@ public class CustomAuditorAware implements AuditorAware<String> {
 
         if(name.equals("anonymousUser")) return Optional.ofNullable("MASTER");
         else {
-            Member member = memberService.getMemberById(Long.valueOf(name)).orElseThrow(() -> {
-                throw new NotFoundMember("회원을 찾을 수 없습니다.");
-            });
-            return Optional.ofNullable(member.getEmail());
+            return Optional.ofNullable(memberService.getMemberById(Long.valueOf(name)).getEmail());
         }
     }
 }
