@@ -3,11 +3,12 @@ package propofol.userservice.domain.member.service;
 import propofol.userservice.domain.member.service.dto.UpdateMemberDto;
 import propofol.userservice.domain.member.entity.Member;
 
-import java.util.Optional;
+import java.util.List;
 
 public interface MemberService {
-    Optional<Member> getMemberById(Long id);
+    Member getMemberById(Long id);
     Member getMemberByEmail(String email);
+    Member getMemberByNickname(String nickname);
     Boolean isExistByEmail(String email);
     Boolean isExistByNickname(String nickname);
 
@@ -32,4 +33,8 @@ public interface MemberService {
     Member getRefreshMember(String refreshToken);
 
     void changeRefreshToken(Member refreshMember, String refreshToken);
+
+    String saveMemberTags(Long memberId, List<Long> tagIds);
+
+    void plusTotalRecommend(Long id);
 }

@@ -6,25 +6,27 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import propofol.userservice.domain.exception.NotFoundMember;
+import propofol.userservice.domain.member.entity.MemberTag;
 import propofol.userservice.domain.member.service.dto.UpdateMemberDto;
 import propofol.userservice.domain.member.entity.Member;
 import propofol.userservice.domain.member.repository.MemberRepository;
 
-import javax.persistence.EntityManager;
-import java.util.Optional;
+import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
-@Slf4j
+@Transactional(readOnly = true)
 public class MemberServiceImpl implements MemberService{
 
     private final MemberRepository memberRepository;
     private final BCryptPasswordEncoder encoder;
-    private final EntityManager em;
 
     @Override
-    public Optional<Member> getMemberById(Long id) {
-        return memberRepository.findById(id);
+    public Member getMemberById(Long id) {
+        return memberRepository.findById(id).orElseThrow(() -> {
+            throw new NotFoundMember("회원을 찾을 수 없습니다.");
+        });
     }
 
     @Override
@@ -33,6 +35,13 @@ public class MemberServiceImpl implements MemberService{
             throw new NotFoundMember("해당 회원을 찾을 수 없습니다.");
         });
         return member;
+    }
+
+    @Override
+    public Member getMemberByNickname(String nickname) {
+        return memberRepository.findByNickname(nickname).orElseThrow(() -> {
+            throw new NotFoundMember("없는 회원입니다.");
+        });
     }
 
     @Override
@@ -55,9 +64,7 @@ public class MemberServiceImpl implements MemberService{
     @Override
     @Transactional
     public void updateMember(UpdateMemberDto dto, Long memberId) {
-        Member findMember = getMemberById(memberId).orElseThrow(() -> {
-            throw new NotFoundMember("회원을 찾을 수 없습니다.");
-        });
+        Member findMember = getMemberById(memberId);
 
         String password = dto.getPassword();
         String nickname = dto.getNickname();
@@ -91,5 +98,45 @@ public class MemberServiceImpl implements MemberService{
     @Transactional
     public void changeRefreshToken(Member refreshMember, String refreshToken) {
         refreshMember.changeRefreshToken(refreshToken);
+    }
+
+    public Member getMemberWithTagByMemberId(Long memberId){
+        return memberRepository.findMemberWithTagByMemberId(memberId)
+                .orElseThrow(() -> {throw new NotFoundMember("회원을 찾을 수 없습니다.");});
+    }
+
+
+    @Override
+    @Transactional
+    public String saveMemberTags(Long memberId, List<Long> tagIds) {
+        Member member = getMemberWithTagByMemberId(memberId);
+        List<MemberTag> memberTags = member.getMemberTags();
+
+        if(tagIds != null){
+            memberTags.stream().filter(memberTag -> {
+                if(tagIds.contains(memberTag.getTagId())){
+                    tagIds.remove(memberTag.getTagId());
+                    return true;
+                }
+                return false;
+            }).forEach(memberTag -> {
+                memberTag.changeCount(memberTag.getCount() + 1);
+            });
+
+            tagIds.forEach(tagId -> {
+                MemberTag tag = MemberTag.createTag().tagId(tagId).count(1).build();
+                tag.changeMember(member);
+                memberTags.add(tag);
+            });
+        }
+
+        return "ok";
+    }
+
+    @Override
+    @Transactional
+    public void plusTotalRecommend(Long id) {
+        Member findMember = getMemberById(id);
+        findMember.plusTotalRecommend();
     }
 }
