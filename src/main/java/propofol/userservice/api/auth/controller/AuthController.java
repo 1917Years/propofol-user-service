@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -105,7 +104,6 @@ public class AuthController {
                                          HttpServletResponse response){
         Member refreshMember = memberService.getRefreshMember(refreshToken);
 
-        // access-token 만료, refresh-token 만료X, refresh-token db와 같을 때
         if(jwtProvider.isTokenValid(token)){
            throw new NotExpiredAccessTokenException("Valid access-token");
         }
