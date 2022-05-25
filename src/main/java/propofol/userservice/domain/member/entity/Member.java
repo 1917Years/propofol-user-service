@@ -1,7 +1,9 @@
 package propofol.userservice.domain.member.entity;
 
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.DynamicUpdate;
+import propofol.userservice.domain.image.entity.Profile;
 import propofol.userservice.domain.timetable.entity.TimeTable;
 
 import javax.persistence.*;
@@ -38,9 +40,15 @@ public class Member extends BaseEntity{
 
     private String refreshToken;
 
+    @BatchSize(size = 10)
     @OneToMany(mappedBy = "member")
     List<TimeTable> timeTables = new ArrayList<>();
 
+    @BatchSize(size = 10)
+    @OneToMany(mappedBy = "member")
+    List<Profile> profile = new ArrayList<>();
+
+    @BatchSize(size = 10)
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
     List<MemberTag> memberTags = new ArrayList<>();
 
