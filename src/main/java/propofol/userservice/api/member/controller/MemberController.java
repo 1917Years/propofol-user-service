@@ -3,24 +3,35 @@ package propofol.userservice.api.member.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import propofol.userservice.api.common.annotation.Jwt;
 import propofol.userservice.api.common.annotation.Token;
 import propofol.userservice.api.common.exception.SaveProfileException;
+import propofol.userservice.api.feign.dto.TagsDto;
+import propofol.userservice.api.feign.service.TagService;
 import propofol.userservice.api.member.controller.dto.*;
 import propofol.userservice.api.member.service.ProfileService;
 import propofol.userservice.domain.exception.ExistFollowingException;
 import propofol.userservice.domain.exception.SameMemberFollowingException;
+import propofol.userservice.domain.image.entity.Profile;
+import propofol.userservice.domain.member.entity.MemberTag;
 import propofol.userservice.domain.member.service.FollowingService;
 import propofol.userservice.domain.member.service.dto.UpdateMemberDto;
 import propofol.userservice.domain.member.entity.Member;
 import propofol.userservice.domain.member.service.MemberService;
 import propofol.userservice.domain.streak.entity.Streak;
 import propofol.userservice.domain.streak.service.StreakService;
+import propofol.userservice.domain.timetable.entity.TimeTable;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -29,6 +40,7 @@ import java.util.List;
 public class MemberController {
 
     private final MemberService memberService;
+    private final TagService tagService;
     private final ProfileService profileService;
     private final ModelMapper modelMapper;
     private final StreakService streakService;
@@ -65,6 +77,50 @@ public class MemberController {
     @ResponseStatus(HttpStatus.OK)
     public String getMemberNickname(@PathVariable("memberId") Long memberId){
         return memberService.getMemberById(memberId).getNickname();
+    }
+
+    /**
+     * 회원 조회 -> 닉네임, Profile, 태그
+     */
+    @GetMapping("/info/{memberId}")
+    @ResponseStatus(HttpStatus.OK)
+    public MemberInfoDto getMemberInfo(@PathVariable("memberId") Long memberId,
+                                       @Jwt String token){
+        Member findMember = memberService.getMemberWithTagByMemberId(memberId);
+        ProfileResponseDto profile = profileService.getProfile(memberId);
+        List<TagDetailDto> tagDetailDtos = new ArrayList<>();
+        Set<Long> tagIds = findMember.getMemberTags().stream().map(MemberTag::getTagId).collect(Collectors.toSet());
+
+        TagsDto tagsDto = tagService.getTagNames(token, tagIds);
+        tagsDto.getTags().forEach(tagDetailDto -> {
+            tagDetailDtos.add(new TagDetailDto(tagDetailDto.getId(), tagDetailDto.getName()));
+        });
+
+        return new MemberInfoDto(findMember.getId(), findMember.getNickname(),
+                profile.getProfileString(), profile.getProfileType(), tagDetailDtos);
+    }
+
+    /**
+     * 회원 조회 -> 닉네임
+     */
+    @GetMapping("/info/{memberId}/nickName")
+    @ResponseStatus(HttpStatus.OK)
+    public String getMemberNickName(@PathVariable("memberId") Long memberId,
+                                         @Jwt String token){
+        return memberService.getMemberById(memberId).getNickname();
+    }
+
+    /**
+     * 회원 조회 -> Set 회원 아이디로 조회
+     */
+    @GetMapping("/info")
+    @ResponseStatus(HttpStatus.OK)
+    public PageResponseDto getMemberNickName(@RequestParam("memberId") Set<Long> memberIds,
+                                             @RequestParam("page") int page,
+                                             @Jwt String token){
+        PageResponseDto<MemberInfoDto> responseDto = createPageDto(memberIds, page, token);
+
+        return responseDto;
     }
 
     /**
@@ -203,11 +259,16 @@ public class MemberController {
     }
 
     /**
-     * 매칭 게시판 회원 추천 조회
+     * 태그 + 태그 수 + 총 추천 수 회원 조회
      */
     @GetMapping("/matchings")
-    public MatchingResponseDto getMatchingData(){
-        return null;
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto getMatchingData(@RequestParam(value = "tagId", required = false) Set<Long> tagIds,
+                                       @RequestParam("page") int page,
+                                       @Jwt String token){
+        MatchingResponseDto responseDto = createMatchingResponseDto(tagIds, page, token);
+
+        return new ResponseDto(HttpStatus.OK.value(), "success", "추천 회원 조회 성공", responseDto);
     }
 
     private StreakResponseDto getStreakResponseDto(Long memberId) {
@@ -226,4 +287,94 @@ public class MemberController {
         return streakResponseDto;
     }
 
+    private MatchingResponseDto createMatchingResponseDto(Set<Long> tagIds, int page, String token) {
+        MatchingResponseDto responseDto = new MatchingResponseDto();
+
+        Page<Member> memberPage = memberService.getMemberWithTagId(tagIds, page);
+        responseDto.setTotalPageCount(memberPage.getTotalPages());
+        responseDto.setTotalCount(memberPage.getTotalElements());
+        Set<Long> tagIdSet = new HashSet<>();
+        memberPage.forEach(member -> {
+            member.getMemberTags().forEach(memberTag -> {
+                tagIdSet.add(memberTag.getTagId());
+            });
+        });
+
+        TagsDto tagDto = tagService.getTagNames(token, tagIdSet);
+
+        memberPage.forEach(member -> {
+            MatchingDetailResponseDto detailResponseDto = modelMapper.map(member, MatchingDetailResponseDto.class);
+            List<Profile> profile = member.getProfile();
+
+            if(profile.size() > 0) {
+                detailResponseDto.setProfileString(profileService.getProfileString(profile.get(0).getStoreFileName()));
+                detailResponseDto.setProfileType(profile.get(0).getContentType());
+            }
+
+            List<MemberTag> memberTags = member.getMemberTags();
+            memberTags.forEach(memberTag -> {
+                tagDto.getTags().forEach(tag -> {
+                    if(tag.getId() == memberTag.getTagId()){
+                        detailResponseDto.getTagData().add(modelMapper.map(tag, TagDetailDto.class));
+                    }
+                });
+            });
+
+            List<TimeTable> timeTables = member.getTimeTables();
+            if(timeTables.size() > 0) {
+                List<String> weeks = new ArrayList<>();
+                List<String> startTimes = new ArrayList<>();
+                List<String> endTimes = new ArrayList<>();
+                timeTables.forEach(timeTable -> {
+                    weeks.add(timeTable.getWeek());
+                    startTimes.add(timeTable.getStartTime().toString());
+                    endTimes.add(timeTable.getEndTime().toString());
+                });
+                detailResponseDto.getTimetableData().add(new TimeTableDetailDto(weeks, startTimes, endTimes));
+            }
+
+            responseDto.getData().add(detailResponseDto);
+        });
+        return responseDto;
+    }
+
+    private PageResponseDto<MemberInfoDto> createPageDto(Set<Long> memberIds, int page, String token) {
+        PageResponseDto<MemberInfoDto> responseDto = new PageResponseDto<>();
+        Page<Member> memberPage = memberService.getMembersByMemberIds(memberIds, page);
+        responseDto.setTotalCount(memberPage.getTotalElements());
+        responseDto.setTotalPageCount(memberPage.getTotalPages());
+
+        Set<Long> tagIds = new HashSet<>();
+        memberPage.getContent().forEach(member ->
+                member.getMemberTags().forEach(memberTag -> tagIds.add(memberTag.getTagId())));
+        TagsDto tagDto = tagService.getTagNames(token, tagIds);
+
+        List<MemberInfoDto> responseDetailDto = responseDto.getData();
+
+        memberPage.forEach(member -> {
+            MemberInfoDto memberInfoDto = new MemberInfoDto();
+            List<Profile> profiles = member.getProfile();
+            if(profiles.size() > 0){
+                Profile profile = profiles.get(0);
+                memberInfoDto.setProfileString(profileService.getProfileString(profile.getStoreFileName()));
+                memberInfoDto.setProfileType(profile.getContentType());
+            }
+            memberInfoDto.setNickName(member.getNickname());
+            memberInfoDto.setId(member.getId());
+
+            System.out.println("me = " + member.getMemberTags().size());
+            member.getMemberTags().forEach(memberTag -> {
+                tagDto.getTags().forEach(tagDetailDto -> {
+                    System.out.println("memberTag = " + memberTag.getTagId());
+                    System.out.println("getId() = " + tagDetailDto.getId());
+                    if(tagDetailDto.getId() == memberTag.getTagId()){
+                        memberInfoDto.getTags().add(new TagDetailDto(tagDetailDto.getId(), tagDetailDto.getName()));
+                    }
+                });
+            });
+
+            responseDetailDto.add(memberInfoDto);
+        });
+        return responseDto;
+    }
 }
