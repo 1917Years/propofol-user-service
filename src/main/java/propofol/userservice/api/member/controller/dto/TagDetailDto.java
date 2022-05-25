@@ -7,8 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ProfileResponseDto {
-    private Long memberId;
-    private String profileString;
-    private String profileType;
+public class TagDetailDto {
+    private Long id;
+    private String name;
 }

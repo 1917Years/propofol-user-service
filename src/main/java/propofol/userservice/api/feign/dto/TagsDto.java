@@ -7,5 +7,5 @@ import java.util.List;
 
 @Data
 public class TagsDto {
-    private List<TagNameDto> tags = new ArrayList<>();
+    private List<TagDetailDto> tags = new ArrayList<>();
 }
