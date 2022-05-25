@@ -26,12 +26,12 @@ public class AuthService {
     private final MemberService memberService;
 
     @Transactional
-    public Object propofolLogin(LoginRequestDto loginDto, HttpServletResponse response){
+    public Object propofolLogin(LoginRequestDto loginDto){
         UsernamePasswordAuthenticationToken authenticationToken =
                 new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword());
 
+        Authentication authenticate = authenticationManager.authenticate(authenticationToken);
         try {
-            Authentication authenticate = authenticationManager.authenticate(authenticationToken);
             TokenDto tokenDto = jwtHandler.createJwt(authenticate);
             saveRefreshToken(authenticate, tokenDto);
             return tokenDto;
