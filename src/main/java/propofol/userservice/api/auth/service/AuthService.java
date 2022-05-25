@@ -26,12 +26,12 @@ public class AuthService {
     private final MemberService memberService;
 
     @Transactional
-    public Object propofolLogin(LoginRequestDto loginDto, HttpServletResponse response){
+    public Object propofolLogin(LoginRequestDto loginDto){
         UsernamePasswordAuthenticationToken authenticationToken =
                 new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword());
 
+        Authentication authenticate = authenticationManager.authenticate(authenticationToken);
         try {
-            Authentication authenticate = authenticationManager.authenticate(authenticationToken);
             TokenDto tokenDto = jwtHandler.createJwt(authenticate);
             saveRefreshToken(authenticate, tokenDto);
             return tokenDto;
@@ -54,9 +54,6 @@ public class AuthService {
     private void saveRefreshToken(Authentication authenticate, TokenDto tokenDto) {
         String refreshToken = tokenDto.getRefreshToken();
         Long id = Long.valueOf(authenticate.getName());
-        Member findMember = memberService.getMemberById(id).orElseThrow(() -> {
-            throw new NotFoundMember("회원을 찾을 수 없습니다.");
-        });
-        findMember.changeRefreshToken(refreshToken);
+        memberService.getMemberById(id).changeRefreshToken(refreshToken);
     }
 }

@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -15,7 +17,6 @@ public class MemberResponseDto {
     private String username;
     private String nickname;
     private String phoneNumber;
-    private LocalDate birth;
-    private String degree;
-    private String score;
+
+    private List<TagDetailDto> tagInfos = new ArrayList<>();
 }

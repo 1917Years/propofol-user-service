@@ -1,6 +1,5 @@
 package propofol.userservice.api.auth.controller.dto;
 
-import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;

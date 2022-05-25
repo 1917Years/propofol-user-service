@@ -4,15 +4,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import propofol.userservice.api.auth.controller.dto.EmailRequestDto;
 import propofol.userservice.api.auth.controller.dto.LoginRequestDto;
+import propofol.userservice.api.auth.controller.dto.NicknameRequestDto;
 import propofol.userservice.api.auth.service.AuthService;
-import propofol.userservice.api.common.exception.dto.ErrorDetailDto;
+import propofol.userservice.api.common.exception.DuplicateEmailException;
+import propofol.userservice.api.common.exception.DuplicateNicknameException;
+import propofol.userservice.api.common.exception.NotExpiredAccessTokenException;
+import propofol.userservice.api.common.exception.ReCreateJwtException;
 import propofol.userservice.api.common.exception.dto.ErrorDto;
 import propofol.userservice.api.common.jwt.JwtProvider;
 import propofol.userservice.api.common.jwt.TokenDto;
@@ -24,8 +26,6 @@ import propofol.userservice.domain.member.entity.Member;
 import propofol.userservice.domain.member.service.MemberService;
 
 import javax.servlet.http.HttpServletResponse;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 
 @RestController
 @RequiredArgsConstructor
@@ -36,13 +36,39 @@ public class AuthController {
     private final AuthService authService;
     private final JwtProvider jwtProvider;
     private final BCryptPasswordEncoder encoder;
+    
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseDto duplicateEmailException(DuplicateEmailException e){
+        return new ResponseDto(HttpStatus.BAD_REQUEST.value(), "fail", "중복 오류", e.getMessage());
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseDto NotExpiredAccessTokenException(NotExpiredAccessTokenException e){
+        return new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), "fail",
+                "토큰 재발급 실패", e.getMessage());
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseDto ReCreateJwtException(ReCreateJwtException e){
+        return new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), "fail",
+                "토큰 재발급 실패", e.getMessage());
+    }
+
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseDto duplicateNicknameException(DuplicateNicknameException e){
+        return new ResponseDto(HttpStatus.BAD_REQUEST.value(), "fail", "중복 오류", e.getMessage());
+    }
 
     @PostMapping("/login")
     @ResponseStatus(HttpStatus.OK)
-    public ResponseDto login(@Validated @RequestBody LoginRequestDto loginDto, HttpServletResponse response){
-        Object result = authService.propofolLogin(loginDto, response);
+    public ResponseDto login(@Validated @RequestBody LoginRequestDto loginDto){
+        Object result = authService.propofolLogin(loginDto);
         if(result instanceof ErrorDto){
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             return new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), "fail", "로그인 실패", result);
         }else{
             return new ResponseDto<>(HttpStatus.OK.value(), "success", "로그인 성공!", result);
@@ -51,21 +77,10 @@ public class AuthController {
 
     @PostMapping("/join")
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseDto saveMember(@Validated @RequestBody SaveMemberDto saveMemberDto, HttpServletResponse response){
-        ErrorDto errorDto = new ErrorDto();
-        checkDuplicate(saveMemberDto, errorDto);
-
-        if(errorDto.getErrors().size() != 0){
-            errorDto.setErrorMessage("중복 오류!");
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            return new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), "fail", "회원 저장 실패", errorDto);
-        }
-
-        String birth = saveMemberDto.getMemberBirth();
-        LocalDate date = LocalDate.parse(birth, DateTimeFormatter.ISO_DATE);
-
-        Member member = createMember(saveMemberDto, date);
-
+    public ResponseDto saveMember(@Validated @RequestBody SaveMemberDto saveMemberDto) {
+//        String birth = saveMemberDto.getMemberBirth();
+//        LocalDate date = LocalDate.parse(birth, DateTimeFormatter.ISO_DATE);
+        Member member = createMember(saveMemberDto);
         memberService.saveMember(member);
 
         return new ResponseDto<>(HttpStatus.CREATED.value(), "success", "회원 저장 성공!", "ok");
@@ -87,52 +102,59 @@ public class AuthController {
                                          @RequestHeader("refresh-token") String refreshToken,
                                          HttpServletResponse response){
         Member refreshMember = memberService.getRefreshMember(refreshToken);
-        // access-token 만료, refresh-token 만료X, refresh-token db와 같을 때
+
         if(jwtProvider.isTokenValid(token)){
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            return new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), "fail",
-                    "토큰 재발급 실패", "Valid access-token");
+           throw new NotExpiredAccessTokenException("Valid access-token");
         }
 
         if(jwtProvider.isRefreshTokenValid(refreshToken)
                 && refreshMember.getRefreshToken().equals(refreshToken)){
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            TokenDto tokenDto = jwtProvider.createJwt(authentication);
+            TokenDto tokenDto = jwtProvider.createReJwt(String.valueOf(refreshMember.getId()),
+                    refreshMember.getAuthority().toString());
             memberService.changeRefreshToken(refreshMember, tokenDto.getRefreshToken());
-            return new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), "success",
+            return new ResponseDto<>(HttpStatus.OK.value(), "success",
                     "토큰 재발급 성공!", tokenDto);
         }
 
         response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-        return new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), "fail",
-                "토큰 재발급 실패", "Please Re-Login.");
+        throw new ReCreateJwtException("Please Re-Login.");
+    }
+
+    /**
+     * email 중복 확인
+     */
+    @PostMapping("/email")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto checkDuplicateEmail(@Validated @RequestBody EmailRequestDto requestDto){
+        if(memberService.isExistByEmail(requestDto.getEmail())){
+            throw new DuplicateEmailException("이메일 중복");
+        }
+        return new ResponseDto(HttpStatus.OK.value(), "success", "이메일 중복 없음", "ok");
+    }
+
+    /**
+     * nickname 중복 확인
+     */
+    @PostMapping("/nickname")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto checkDuplicateNickname(@Validated @RequestBody NicknameRequestDto requestDto){
+        if(memberService.isExistByNickname(requestDto.getNickname())){
+            throw new DuplicateNicknameException("닉네임 중복");
+        }
+        return new ResponseDto(HttpStatus.OK.value(), "success", "닉네임 중복 없음", "ok");
     }
 
 
-
-    private Member createMember(SaveMemberDto saveMemberDto, LocalDate date) {
+    private Member createMember(SaveMemberDto saveMemberDto) {
         Member member = Member.createMember()
                 .email(saveMemberDto.getEmail())
                 .password(encoder.encode(saveMemberDto.getPassword()))
                 .nickname(saveMemberDto.getNickname())
                 .username(saveMemberDto.getUsername())
-                .birth(date)
-                .degree(saveMemberDto.getDegree())
                 .phoneNumber(saveMemberDto.getPhoneNumber())
-                .score(saveMemberDto.getScore())
                 .authority(Authority.ROLE_USER)
+                .totalRecommend(0)
                 .build();
         return member;
     }
-
-    private void checkDuplicate(SaveMemberDto saveMemberDto, ErrorDto errorDto) {
-        if(memberService.checkDuplicateByEmail(saveMemberDto.getEmail())){
-            errorDto.getErrors().add(new ErrorDetailDto("Email", "중복 오류"));
-        }
-
-        if(memberService.checkDuplicateByNickname(saveMemberDto.getNickname())){
-            errorDto.getErrors().add(new ErrorDetailDto("Nickname", "중복 오류"));
-        }
-    }
-
 }

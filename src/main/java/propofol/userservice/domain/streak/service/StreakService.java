@@ -34,9 +34,7 @@ public class StreakService {
      */
     @Transactional
     public void saveStreak(Long memberId, Streak streak) {
-        Member findMember = memberService.getMemberById(memberId).orElseThrow(() -> {
-            throw new NotFoundMember("회원을 찾을 수 없습니다.");
-        });
+        Member findMember = memberService.getMemberById(memberId);
 
         Streak resultStreak = streakRepository
                 .findByMember_IdAndAndWorkingDate(memberId, streak.getWorkingDate()).orElse(streak);

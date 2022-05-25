@@ -1,20 +1,21 @@
 package propofol.userservice.domain.member.service;
 
+import org.springframework.data.domain.Page;
 import propofol.userservice.domain.member.service.dto.UpdateMemberDto;
 import propofol.userservice.domain.member.entity.Member;
 
-import java.util.Optional;
+import java.util.List;
+import java.util.Set;
 
 public interface MemberService {
-    Optional<Member> getMemberById(Long id);
+    Member getMemberById(Long id);
     Member getMemberByEmail(String email);
+    Member getMemberByNickname(String nickname);
+    Member getMemberWithTagByMemberId(Long memberId);
     Boolean isExistByEmail(String email);
-
-    /**
-     * 닉네임, 이메일 중복 체크
-     */
-    Boolean checkDuplicateByNickname(String nickname);
-    Boolean checkDuplicateByEmail(String email);
+    Boolean isExistByNickname(String nickname);
+    Page<Member> getMemberWithTagId(Set<Long> tagIds, int page);
+    Page<Member> getMembersByMemberIds(Set<Long> memberIds, int page);
 
     /**
      * 회원 저장
@@ -37,4 +38,8 @@ public interface MemberService {
     Member getRefreshMember(String refreshToken);
 
     void changeRefreshToken(Member refreshMember, String refreshToken);
+
+    String saveMemberTags(Long memberId, List<Long> tagIds);
+
+    void plusTotalRecommend(Long id);
 }

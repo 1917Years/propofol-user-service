@@ -1,10 +1,15 @@
 package propofol.userservice.domain.member.entity;
 
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.DynamicUpdate;
+import propofol.userservice.domain.image.entity.Profile;
+import propofol.userservice.domain.timetable.entity.TimeTable;
 
 import javax.persistence.*;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -28,19 +33,33 @@ public class Member extends BaseEntity{
     private LocalDate birth;
     private String degree; // 학력
     private String score; // 학점
+    private long totalRecommend;
 
     @Enumerated(value = EnumType.STRING)
     private Authority authority;
 
     private String refreshToken;
 
+    @BatchSize(size = 10)
+    @OneToMany(mappedBy = "member")
+    List<TimeTable> timeTables = new ArrayList<>();
+
+    @BatchSize(size = 10)
+    @OneToMany(mappedBy = "member")
+    List<Profile> profile = new ArrayList<>();
+
+    @BatchSize(size = 10)
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
+    List<MemberTag> memberTags = new ArrayList<>();
+
+    public void plusTotalRecommend() {this.totalRecommend = totalRecommend + 1;}
     public void changeRefreshToken(String refreshToken){
         this.refreshToken = refreshToken;
     }
 
     @Builder(builderMethodName = "createMember")
-    public Member(String email, String password, String username, String nickname,
-                  String phoneNumber, LocalDate birth, String degree, String score, Authority authority) {
+    public Member(String email, String password, String username, String nickname, String phoneNumber, LocalDate birth,
+                  String degree, String score, Authority authority, long totalRecommend) {
         this.email = email;
         this.password = password;
         this.username = username;
@@ -50,12 +69,11 @@ public class Member extends BaseEntity{
         this.degree = degree;
         this.score = score;
         this.authority = authority;
+        this.totalRecommend = totalRecommend;
     }
 
-    public void update(String nickname, String degree, String score, String password, String phoneNumber){
+    public void update(String nickname, String password, String phoneNumber){
         if(nickname != null) this.nickname = nickname;
-        if(degree != null) this.degree = degree;
-        if(score != null) this.score = score;
         if(password != null) this.password = password;
         if(phoneNumber != null) this.phoneNumber = phoneNumber;
     }

@@ -2,29 +2,35 @@ package propofol.userservice.domain.member.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import propofol.userservice.domain.exception.NotFoundMember;
+import propofol.userservice.domain.member.entity.MemberTag;
 import propofol.userservice.domain.member.service.dto.UpdateMemberDto;
 import propofol.userservice.domain.member.entity.Member;
 import propofol.userservice.domain.member.repository.MemberRepository;
 
-import javax.persistence.EntityManager;
-import java.util.Optional;
+import java.util.List;
+import java.util.Set;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
-@Slf4j
+@Transactional(readOnly = true)
 public class MemberServiceImpl implements MemberService{
 
     private final MemberRepository memberRepository;
     private final BCryptPasswordEncoder encoder;
-    private final EntityManager em;
 
     @Override
-    public Optional<Member> getMemberById(Long id) {
-        return memberRepository.findById(id);
+    public Member getMemberById(Long id) {
+        return memberRepository.findById(id).orElseThrow(() -> {
+            throw new NotFoundMember("회원을 찾을 수 없습니다.");
+        });
     }
 
     @Override
@@ -36,22 +42,21 @@ public class MemberServiceImpl implements MemberService{
     }
 
     @Override
-    public Boolean checkDuplicateByNickname(String nickname) {
-        Member findMember = memberRepository.findDuplicateByNickname(nickname);
-        if(findMember == null) return false;
-        return true;
-    }
-
-    @Override
-    public Boolean checkDuplicateByEmail(String email) {
-        Member findMember = memberRepository.findDuplicateByEmail(email);
-        if(findMember == null) return false;
-        return true;
+    public Member getMemberByNickname(String nickname) {
+        return memberRepository.findByNickname(nickname).orElseThrow(() -> {
+            throw new NotFoundMember("없는 회원입니다.");
+        });
     }
 
     @Override
     public Boolean isExistByEmail(String email) {
         Member findMember = memberRepository.findExistByEmail(email);
+        return findMember == null ? false : true;
+    }
+
+    @Override
+    public Boolean isExistByNickname(String nickname) {
+        Member findMember = memberRepository.findExistByNickname(nickname);
         return findMember == null ? false : true;
     }
 
@@ -63,21 +68,17 @@ public class MemberServiceImpl implements MemberService{
     @Override
     @Transactional
     public void updateMember(UpdateMemberDto dto, Long memberId) {
-        Member findMember = getMemberById(memberId).orElseThrow(() -> {
-            throw new NotFoundMember("회원을 찾을 수 없습니다.");
-        });
+        Member findMember = getMemberById(memberId);
 
         String password = dto.getPassword();
         String nickname = dto.getNickname();
-        String degree = dto.getDegree();
-        String score = dto.getScore();
         String phoneNumber = dto.getPhoneNumber();
 
         if(password != null){
             password = encoder.encode(password);
         }
 
-        findMember.update(nickname, degree, score, password, phoneNumber);
+        findMember.update(nickname, password, phoneNumber);
     }
 
     @Override
@@ -101,5 +102,58 @@ public class MemberServiceImpl implements MemberService{
     @Transactional
     public void changeRefreshToken(Member refreshMember, String refreshToken) {
         refreshMember.changeRefreshToken(refreshToken);
+    }
+
+    public Member getMemberWithTagByMemberId(Long memberId){
+        return memberRepository.findMemberWithTagByMemberId(memberId)
+                .orElseThrow(() -> {throw new NotFoundMember("회원을 찾을 수 없습니다.");});
+    }
+
+
+    @Override
+    @Transactional
+    public String saveMemberTags(Long memberId, List<Long> tagIds) {
+        Member member = getMemberWithTagByMemberId(memberId);
+        List<MemberTag> memberTags = member.getMemberTags();
+
+        if(tagIds != null){
+            memberTags.stream().filter(memberTag -> {
+                if(tagIds.contains(memberTag.getTagId())){
+                    tagIds.remove(memberTag.getTagId());
+                    return true;
+                }
+                return false;
+            }).forEach(memberTag -> {
+                memberTag.changeCount(memberTag.getCount() + 1);
+            });
+
+            tagIds.forEach(tagId -> {
+                MemberTag tag = MemberTag.createTag().tagId(tagId).count(1).build();
+                tag.changeMember(member);
+                memberTags.add(tag);
+            });
+        }
+
+        return "ok";
+    }
+
+    @Override
+    public Page<Member> getMemberWithTagId(Set<Long> tagIds, int page){
+        PageRequest pageRequest = PageRequest.of(page - 1, 10);
+        return memberRepository.getMemberTagByTagIds(tagIds, pageRequest);
+    }
+
+    @Override
+    public Page<Member> getMembersByMemberIds(Set<Long> memberIds, int page) {
+        PageRequest pageRequest
+                = PageRequest.of(page - 1, 10);
+        return memberRepository.getMembersByMemberIds(memberIds, pageRequest);
+    }
+
+    @Override
+    @Transactional
+    public void plusTotalRecommend(Long id) {
+        Member findMember = getMemberById(id);
+        findMember.plusTotalRecommend();
     }
 }
