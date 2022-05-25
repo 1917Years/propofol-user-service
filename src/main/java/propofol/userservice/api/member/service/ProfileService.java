@@ -61,7 +61,7 @@ public class ProfileService {
         profileRepository.save(profile);
 
         return new ProfileResponseDto(member.getId(),
-                getProfileByte(profile.getStoreFileName()), profile.getContentType());
+                getProfileString(profile.getStoreFileName()), profile.getContentType());
     }
 
     private ProfileResponseDto getUpdateProfileResponseDto(MultipartFile file, Member member, String profileDirPath, String storeFileName, Profile findProfile) {
@@ -69,10 +69,10 @@ public class ProfileService {
         if(!findFile.exists()) findFile.delete();
         findProfile.updateProfile(file.getOriginalFilename(), storeFileName, file.getContentType());
         return new ProfileResponseDto(member.getId(),
-                getProfileByte(findProfile.getStoreFileName()), findProfile.getContentType());
+                getProfileString(findProfile.getStoreFileName()), findProfile.getContentType());
     }
 
-    private String getProfileByte(String fileName){
+    public String getProfileString(String fileName){
         String path = getFullPath(getProfileDirPath(), fileName);
         byte[] bytes = null;
 
@@ -119,8 +119,9 @@ public class ProfileService {
         Profile profile = profileRepository.findByMemberId(memberId).orElse(null);
 
         if(profile != null)
-            return new ProfileResponseDto(memberId, getProfileByte(profile.getStoreFileName()), profile.getContentType());
+            return new ProfileResponseDto(memberId, getProfileString(profile.getStoreFileName()), profile.getContentType());
         else
             return new ProfileResponseDto(memberId,  null, null);
     }
+
 }
