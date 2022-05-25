@@ -1,16 +1,21 @@
 package propofol.userservice.domain.member.service;
 
+import org.springframework.data.domain.Page;
 import propofol.userservice.domain.member.service.dto.UpdateMemberDto;
 import propofol.userservice.domain.member.entity.Member;
 
 import java.util.List;
+import java.util.Set;
 
 public interface MemberService {
     Member getMemberById(Long id);
     Member getMemberByEmail(String email);
     Member getMemberByNickname(String nickname);
+    Member getMemberWithTagByMemberId(Long memberId);
     Boolean isExistByEmail(String email);
     Boolean isExistByNickname(String nickname);
+    Page<Member> getMemberWithTagId(Set<Long> tagIds, int page);
+    Page<Member> getMembersByMemberIds(Set<Long> memberIds, int page);
 
     /**
      * 회원 저장

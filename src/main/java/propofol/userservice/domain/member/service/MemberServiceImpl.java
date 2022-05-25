@@ -2,6 +2,9 @@ package propofol.userservice.domain.member.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,6 +15,7 @@ import propofol.userservice.domain.member.entity.Member;
 import propofol.userservice.domain.member.repository.MemberRepository;
 
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -131,6 +135,19 @@ public class MemberServiceImpl implements MemberService{
         }
 
         return "ok";
+    }
+
+    @Override
+    public Page<Member> getMemberWithTagId(Set<Long> tagIds, int page){
+        PageRequest pageRequest = PageRequest.of(page - 1, 10);
+        return memberRepository.getMemberTagByTagIds(tagIds, pageRequest);
+    }
+
+    @Override
+    public Page<Member> getMembersByMemberIds(Set<Long> memberIds, int page) {
+        PageRequest pageRequest
+                = PageRequest.of(page - 1, 10);
+        return memberRepository.getMembersByMemberIds(memberIds, pageRequest);
     }
 
     @Override
