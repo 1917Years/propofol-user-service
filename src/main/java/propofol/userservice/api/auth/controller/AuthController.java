@@ -66,10 +66,9 @@ public class AuthController {
 
     @PostMapping("/login")
     @ResponseStatus(HttpStatus.OK)
-    public ResponseDto login(@Validated @RequestBody LoginRequestDto loginDto, HttpServletResponse response){
-        Object result = authService.propofolLogin(loginDto, response);
+    public ResponseDto login(@Validated @RequestBody LoginRequestDto loginDto){
+        Object result = authService.propofolLogin(loginDto);
         if(result instanceof ErrorDto){
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             return new ResponseDto<>(HttpStatus.BAD_REQUEST.value(), "fail", "로그인 실패", result);
         }else{
             return new ResponseDto<>(HttpStatus.OK.value(), "success", "로그인 성공!", result);
