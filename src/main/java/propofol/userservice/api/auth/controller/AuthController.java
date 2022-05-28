@@ -11,10 +11,7 @@ import propofol.userservice.api.auth.controller.dto.EmailRequestDto;
 import propofol.userservice.api.auth.controller.dto.LoginRequestDto;
 import propofol.userservice.api.auth.controller.dto.NicknameRequestDto;
 import propofol.userservice.api.auth.service.AuthService;
-import propofol.userservice.api.common.exception.DuplicateEmailException;
-import propofol.userservice.api.common.exception.DuplicateNicknameException;
-import propofol.userservice.api.common.exception.NotExpiredAccessTokenException;
-import propofol.userservice.api.common.exception.ReCreateJwtException;
+import propofol.userservice.api.common.exception.*;
 import propofol.userservice.api.common.exception.dto.ErrorDto;
 import propofol.userservice.api.common.jwt.JwtProvider;
 import propofol.userservice.api.common.jwt.TokenDto;
@@ -25,11 +22,12 @@ import propofol.userservice.domain.member.entity.Authority;
 import propofol.userservice.domain.member.entity.Member;
 import propofol.userservice.domain.member.service.MemberService;
 
+import javax.mail.MessagingException;
 import javax.servlet.http.HttpServletResponse;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("auth")
+@RequestMapping("/auth")
 @Slf4j
 public class AuthController {
     private final MemberService memberService;
@@ -41,6 +39,12 @@ public class AuthController {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseDto duplicateEmailException(DuplicateEmailException e){
         return new ResponseDto(HttpStatus.BAD_REQUEST.value(), "fail", "중복 오류", e.getMessage());
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseDto mailSendExceptionException(MailSendException e){
+        return new ResponseDto(HttpStatus.BAD_REQUEST.value(), "fail", "메일 전송 오류", e.getMessage());
     }
 
     @ExceptionHandler
@@ -142,6 +146,17 @@ public class AuthController {
             throw new DuplicateNicknameException("닉네임 중복");
         }
         return new ResponseDto(HttpStatus.OK.value(), "success", "닉네임 중복 없음", "ok");
+    }
+
+    /**
+     * Mail 인증
+     */
+    @PostMapping("/mailCheck")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto mailCheck(@RequestBody EmailRequestDto requestDto) throws MessagingException {
+
+        return new ResponseDto(HttpStatus.OK.value(), "success",
+                "이메일 전송 성공", authService.sendEmail(requestDto.getEmail()));
     }
 
 

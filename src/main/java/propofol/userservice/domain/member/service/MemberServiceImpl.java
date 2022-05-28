@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -144,10 +143,22 @@ public class MemberServiceImpl implements MemberService{
     }
 
     @Override
-    public Page<Member> getMembersByMemberIds(Set<Long> memberIds, int page) {
+    public Page<Member> getMembersByMemberIdsAndPage(Set<Long> memberIds, int page) {
         PageRequest pageRequest
                 = PageRequest.of(page - 1, 10);
-        return memberRepository.getMembersByMemberIds(memberIds, pageRequest);
+        return memberRepository.getMembersByMemberIdsAndPage(memberIds, pageRequest);
+    }
+
+    @Override
+    public List<Member> getMembersByMemberIds(Set<Long> memberIds) {
+        return memberRepository.getMembersByMemberIds(memberIds);
+    }
+
+    @Override
+    public Member getMemberWithTimeTablesByMemberId(Long memberId) {
+        return memberRepository.getMemberWithTimeTableByMemberId(memberId).orElseThrow(() -> {
+            throw new NotFoundMember("회원 조회 실패");
+        });
     }
 
     @Override
