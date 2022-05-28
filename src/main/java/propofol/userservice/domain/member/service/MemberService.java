@@ -15,7 +15,9 @@ public interface MemberService {
     Boolean isExistByEmail(String email);
     Boolean isExistByNickname(String nickname);
     Page<Member> getMemberWithTagId(Set<Long> tagIds, int page);
-    Page<Member> getMembersByMemberIds(Set<Long> memberIds, int page);
+    Page<Member> getMembersByMemberIdsAndPage(Set<Long> memberIds, int page);
+    List<Member> getMembersByMemberIds(Set<Long> memberIds);
+    Member getMemberWithTimeTablesByMemberId(Long memberId);
 
     /**
      * 회원 저장
