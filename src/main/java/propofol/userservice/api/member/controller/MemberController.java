@@ -12,13 +12,12 @@ import propofol.userservice.api.common.annotation.Token;
 import propofol.userservice.api.common.exception.SaveProfileException;
 import propofol.userservice.api.feign.dto.TagsDto;
 import propofol.userservice.api.feign.service.TagService;
+import propofol.userservice.api.subscribe.service.SubscribeApiService;
 import propofol.userservice.api.member.controller.dto.*;
 import propofol.userservice.api.member.service.ProfileService;
 import propofol.userservice.domain.exception.ExistFollowingException;
-import propofol.userservice.domain.exception.SameMemberFollowingException;
 import propofol.userservice.domain.image.entity.Profile;
 import propofol.userservice.domain.member.entity.MemberTag;
-import propofol.userservice.domain.member.service.FollowingService;
 import propofol.userservice.domain.member.service.dto.UpdateMemberDto;
 import propofol.userservice.domain.member.entity.Member;
 import propofol.userservice.domain.member.service.MemberService;
@@ -44,7 +43,7 @@ public class MemberController {
     private final ProfileService profileService;
     private final ModelMapper modelMapper;
     private final StreakService streakService;
-    private final FollowingService followingService;
+    private final SubscribeApiService followingService;
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -194,49 +193,6 @@ public class MemberController {
                 .build();
     }
 
-    /**
-     * following 저장
-     */
-    @PostMapping("/following")
-    @ResponseStatus(HttpStatus.OK)
-    public ResponseDto saveFollowing(@RequestBody FollowingSaveRequestDto requestDto,
-                                     @Token Long memberId){
-        Member findMember = memberService.getMemberById(memberId);
-
-        if(findMember.getNickname() == requestDto.getFollowingNickname())
-            throw new SameMemberFollowingException("동일한 사용자 following 요청입니다.");
-
-        Member followingMember = memberService.getMemberByNickname(requestDto.getFollowingNickname());
-
-        return new ResponseDto(HttpStatus.OK.value(), "success", "follow 기능 성공!",
-                followingService.saveFollowing(findMember, followingMember));
-    }
-
-    /**
-     * follower 조회
-     */
-    @GetMapping("/follower")
-    @ResponseStatus(HttpStatus.OK)
-    public ResponseDto getFollowers(@Token Long memberId){
-        return new ResponseDto(HttpStatus.OK.value(), "success",
-                "팔로워 조회 성공", followingService.getFollowers(memberId));
-    }
-
-    /**
-     * 기존 following 여부 확인
-     */
-    @PostMapping("/checkFollowing")
-    @ResponseStatus(HttpStatus.OK)
-    public ResponseDto checkFollowing(@RequestBody FollowingSaveRequestDto requestDto,
-                                      @Token Long memberId) {
-        Member findMember = memberService.getMemberById(memberId);
-
-        Member followingMember = memberService.getMemberByNickname(requestDto.getFollowingNickname());
-
-        boolean flag = followingService.isExistFollowing(findMember, followingMember);
-
-        return new ResponseDto(HttpStatus.OK.value(), "success", "follow 조회 성공!", flag);
-    }
 
     /**
      * Member Tag 저장
@@ -269,6 +225,17 @@ public class MemberController {
         MatchingResponseDto responseDto = createMatchingResponseDto(tagIds, page, token);
 
         return new ResponseDto(HttpStatus.OK.value(), "success", "추천 회원 조회 성공", responseDto);
+    }
+
+    /**
+     * 회원 시간표 조회
+     */
+    @GetMapping("/timetables")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto getMemberTimeTables(@RequestParam("memberId") Long memberId){
+        TimeTableDetailDto timeTableDetailDto = createTimeTableDto(memberId);
+
+        return new ResponseDto(HttpStatus.OK.value(), "success", "시간표 조회 성공", timeTableDetailDto);
     }
 
     private StreakResponseDto getStreakResponseDto(Long memberId) {
@@ -340,7 +307,7 @@ public class MemberController {
 
     private PageResponseDto<MemberInfoDto> createPageDto(Set<Long> memberIds, int page, String token) {
         PageResponseDto<MemberInfoDto> responseDto = new PageResponseDto<>();
-        Page<Member> memberPage = memberService.getMembersByMemberIds(memberIds, page);
+        Page<Member> memberPage = memberService.getMembersByMemberIdsAndPage(memberIds, page);
         responseDto.setTotalCount(memberPage.getTotalElements());
         responseDto.setTotalPageCount(memberPage.getTotalPages());
 
@@ -376,5 +343,17 @@ public class MemberController {
             responseDetailDto.add(memberInfoDto);
         });
         return responseDto;
+    }
+
+    private TimeTableDetailDto createTimeTableDto(Long memberId) {
+        Member findMember = memberService.getMemberWithTimeTablesByMemberId(memberId);
+        TimeTableDetailDto timeTableDetailDto = new TimeTableDetailDto();
+        List<TimeTable> timeTables = findMember.getTimeTables();
+        timeTables.forEach(timeTable -> {
+            timeTableDetailDto.getWeeks().add(timeTable.getWeek());
+            timeTableDetailDto.getStartTimes().add(timeTable.getStartTime().toString());
+            timeTableDetailDto.getEndTimes().add(timeTable.getEndTime().toString());
+        });
+        return timeTableDetailDto;
     }
 }
