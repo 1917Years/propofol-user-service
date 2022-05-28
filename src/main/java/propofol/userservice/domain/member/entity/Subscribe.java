@@ -4,20 +4,22 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 
 import javax.persistence.*;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Following {
+public class Subscribe {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "following_id")
+    @Column(name = "subscribe_id")
     private Long id;
 
     private Long followingMemberId;
 
+    @BatchSize(size = 10)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id")
     private Member member;
@@ -27,7 +29,7 @@ public class Following {
     }
 
     @Builder(builderMethodName = "createFollowing")
-    public Following(Long followingMemberId) {
+    public Subscribe(Long followingMemberId) {
         this.followingMemberId = followingMemberId;
     }
 }
