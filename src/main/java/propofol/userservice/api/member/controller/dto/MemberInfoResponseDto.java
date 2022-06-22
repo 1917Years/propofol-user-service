@@ -10,12 +10,11 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class MemberInfoDto {
+public class MemberInfoResponseDto {
     private Long id;
     private String nickName;
-    private String email;
     private String profileString;
     private String profileType;
 
-    private List<TagDetailDto> tags = new ArrayList<>();
+    private List<TagDetailDto> tagInfos = new ArrayList<>();
 }
