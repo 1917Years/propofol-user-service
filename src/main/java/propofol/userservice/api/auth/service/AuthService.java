@@ -54,7 +54,7 @@ public class AuthService {
 
     }
 
-    public String sendEmail(String address) {
+    public String sendEmail(String address, String projectEmail) {
         Random random = new Random();
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 8; i++) {
@@ -68,8 +68,9 @@ public class AuthService {
         MimeMessageHelper mimeMessageHelper = null;
         try {
             mimeMessageHelper = new MimeMessageHelper(message, false, "UTF-8");
+            mimeMessageHelper.setFrom(projectEmail);
             mimeMessageHelper.setTo(address);
-            mimeMessageHelper.setSubject("propofol 인증 메일");
+            mimeMessageHelper.setSubject("[propofol] 회원 가입 인증 메일");
             mimeMessageHelper.setText(key);
         } catch (MessagingException e) {
             throw new MailSendException("메일 전송 실패");

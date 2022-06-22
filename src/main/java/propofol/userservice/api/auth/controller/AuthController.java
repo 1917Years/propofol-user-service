@@ -15,6 +15,7 @@ import propofol.userservice.api.common.exception.*;
 import propofol.userservice.api.common.exception.dto.ErrorDto;
 import propofol.userservice.api.common.jwt.JwtProvider;
 import propofol.userservice.api.common.jwt.TokenDto;
+import propofol.userservice.api.common.properties.MailProperties;
 import propofol.userservice.api.member.controller.dto.ResponseDto;
 import propofol.userservice.api.member.controller.dto.SaveMemberDto;
 import propofol.userservice.api.auth.controller.dto.UpdatePasswordRequestDto;
@@ -23,7 +24,6 @@ import propofol.userservice.domain.member.entity.Member;
 import propofol.userservice.domain.member.service.MemberService;
 
 import javax.mail.MessagingException;
-import javax.servlet.http.HttpServletResponse;
 
 @RestController
 @RequiredArgsConstructor
@@ -34,6 +34,7 @@ public class AuthController {
     private final AuthService authService;
     private final JwtProvider jwtProvider;
     private final BCryptPasswordEncoder encoder;
+    private final MailProperties mailProperties;
     
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -82,8 +83,6 @@ public class AuthController {
     @PostMapping("/join")
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseDto saveMember(@Validated @RequestBody SaveMemberDto saveMemberDto) {
-//        String birth = saveMemberDto.getMemberBirth();
-//        LocalDate date = LocalDate.parse(birth, DateTimeFormatter.ISO_DATE);
         Member member = createMember(saveMemberDto);
         memberService.saveMember(member);
 
@@ -103,8 +102,7 @@ public class AuthController {
     @GetMapping("/refresh")
     @ResponseStatus(HttpStatus.OK)
     public ResponseDto checkRefreshToken(@RequestHeader(HttpHeaders.AUTHORIZATION) String token,
-                                         @RequestHeader("refresh-token") String refreshToken,
-                                         HttpServletResponse response){
+                                         @RequestHeader("refresh-token") String refreshToken){
         Member refreshMember = memberService.getRefreshMember(refreshToken);
 
         if(jwtProvider.isTokenValid(token)){
@@ -120,7 +118,6 @@ public class AuthController {
                     "토큰 재발급 성공!", tokenDto);
         }
 
-        response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         throw new ReCreateJwtException("Please Re-Login.");
     }
 
@@ -156,7 +153,7 @@ public class AuthController {
     public ResponseDto mailCheck(@RequestBody EmailRequestDto requestDto) throws MessagingException {
 
         return new ResponseDto(HttpStatus.OK.value(), "success",
-                "이메일 전송 성공", authService.sendEmail(requestDto.getEmail()));
+                "이메일 전송 성공", authService.sendEmail(requestDto.getEmail(), mailProperties.getUsername()));
     }
 
 
@@ -166,7 +163,6 @@ public class AuthController {
                 .password(encoder.encode(saveMemberDto.getPassword()))
                 .nickname(saveMemberDto.getNickname())
                 .username(saveMemberDto.getUsername())
-                .phoneNumber(saveMemberDto.getPhoneNumber())
                 .authority(Authority.ROLE_USER)
                 .totalRecommend(0)
                 .build();
