@@ -57,11 +57,8 @@ public class Oauth2Service {
                     .email(email)
                     .password(password)
                     .phoneNumber(null)
-                    .degree(null)
-                    .score(null)
                     .nickname(null)
                     .username(null)
-                    .birth(null)
                     .authority(Authority.ROLE_USER)
                     .totalRecommend(0L)
                     .build();
@@ -81,7 +78,7 @@ public class Oauth2Service {
                 HttpMethod.GET, new HttpEntity<>(null, httpHeaders), KakaoUserInfoDto.class);
         return userInfoResponse;
     }
-
+    
     private ResponseEntity<KakaoTokenResponseDto> getAccessToken(String code) {
         MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
         map.add("grant_type", kakao.getGrantType());
