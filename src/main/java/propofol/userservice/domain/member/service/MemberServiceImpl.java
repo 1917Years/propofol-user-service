@@ -2,6 +2,7 @@ package propofol.userservice.domain.member.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.ObjectUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -15,6 +16,7 @@ import propofol.userservice.domain.member.repository.MemberRepository;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -116,21 +118,32 @@ public class MemberServiceImpl implements MemberService{
         List<MemberTag> memberTags = member.getMemberTags();
 
         if(tagIds != null){
-            memberTags.stream().filter(memberTag -> {
-                if(tagIds.contains(memberTag.getTagId())){
-                    tagIds.remove(memberTag.getTagId());
-                    return true;
+            List<MemberTag> collect = memberTags.stream().filter(memberTag -> {
+                for (Long tagId : tagIds) {
+                    if (ObjectUtils.equals(memberTag.getTagId(), tagId)) {
+                        tagIds.remove(tagId);
+                        return true;
+                    }
                 }
                 return false;
-            }).forEach(memberTag -> {
-                memberTag.changeCount(memberTag.getCount() + 1);
-            });
+            }).collect(Collectors.toList());
 
-            tagIds.forEach(tagId -> {
-                MemberTag tag = MemberTag.createTag().tagId(tagId).count(1).build();
-                tag.changeMember(member);
-                memberTags.add(tag);
-            });
+            if(collect.size() > 0){
+                collect.forEach(memberTag -> {
+                    memberTag.changeCount(memberTag.getCount() + 1);
+                });
+            }
+
+            if(tagIds.size() > 0){
+                for (Long tagId : tagIds) {
+                    MemberTag memberTag = MemberTag.createTag()
+                            .tagId(tagId)
+                            .count(1)
+                            .build();
+                    memberTag.changeMember(member);
+                    memberTags.add(memberTag);
+                }
+            }
         }
 
         return "ok";
@@ -140,6 +153,12 @@ public class MemberServiceImpl implements MemberService{
     public Page<Member> getMemberWithTagId(Set<Long> tagIds, int page){
         PageRequest pageRequest = PageRequest.of(page - 1, 10);
         return memberRepository.getMemberTagByTagIds(tagIds, pageRequest);
+    }
+
+    @Override
+    public Page<Member> getMemberWithTagIdAndNoMemberId(Set<Long> tagIds, int page, Set<Long> memberIds){
+        PageRequest pageRequest = PageRequest.of(page - 1, 10);
+        return memberRepository.getMemberTagByTagIdsAndNoMemberIds(tagIds, memberIds, pageRequest);
     }
 
     @Override

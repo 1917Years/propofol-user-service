@@ -14,15 +14,13 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class CustomAuditorAware implements AuditorAware<String> {
 
-    private final MemberService memberService;
-
     @Override
     public Optional<String> getCurrentAuditor() {
         String name = SecurityContextHolder.getContext().getAuthentication().getName();
 
         if(name.equals("anonymousUser")) return Optional.ofNullable("MASTER");
         else {
-            return Optional.ofNullable(memberService.getMemberById(Long.valueOf(name)).getEmail());
+            return Optional.ofNullable(name);
         }
     }
 }

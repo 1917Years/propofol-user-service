@@ -2,6 +2,7 @@ package propofol.userservice.api.member.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.ObjectUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -11,8 +12,8 @@ import propofol.userservice.api.common.annotation.Jwt;
 import propofol.userservice.api.common.annotation.Token;
 import propofol.userservice.api.common.exception.SaveProfileException;
 import propofol.userservice.api.feign.dto.TagsDto;
+import propofol.userservice.api.feign.service.MatchingService;
 import propofol.userservice.api.feign.service.TagService;
-import propofol.userservice.api.subscribe.service.SubscribeApiService;
 import propofol.userservice.api.member.controller.dto.*;
 import propofol.userservice.api.member.service.ProfileService;
 import propofol.userservice.domain.exception.ExistFollowingException;
@@ -26,10 +27,7 @@ import propofol.userservice.domain.streak.service.StreakService;
 import propofol.userservice.domain.timetable.entity.TimeTable;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -43,7 +41,7 @@ public class MemberController {
     private final ProfileService profileService;
     private final ModelMapper modelMapper;
     private final StreakService streakService;
-    private final SubscribeApiService followingService;
+    private final MatchingService matchingService;
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -63,10 +61,8 @@ public class MemberController {
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     public ResponseDto getMemberByMemberId(@Token Long memberId){
-        Member findMember = memberService.getMemberById(memberId);
-
         return new ResponseDto<>(HttpStatus.OK.value(), "success",
-                "회원 조회 성공!", modelMapper.map(findMember, MemberResponseDto.class));
+                "회원 조회 성공!", modelMapper.map(memberService.getMemberById(memberId), MemberResponseDto.class));
     }
 
     /**
@@ -83,8 +79,8 @@ public class MemberController {
      */
     @GetMapping("/info/{memberId}")
     @ResponseStatus(HttpStatus.OK)
-    public MemberInfoDto getMemberInfo(@PathVariable("memberId") Long memberId,
-                                       @Jwt String token){
+    public MemberInfoResponseDto getMemberInfo(@PathVariable("memberId") Long memberId,
+                                               @Jwt String token){
         Member findMember = memberService.getMemberWithTagByMemberId(memberId);
         ProfileResponseDto profile = profileService.getProfile(memberId);
         List<TagDetailDto> tagDetailDtos = new ArrayList<>();
@@ -95,7 +91,7 @@ public class MemberController {
             tagDetailDtos.add(new TagDetailDto(tagDetailDto.getId(), tagDetailDto.getName()));
         });
 
-        return new MemberInfoDto(findMember.getId(), findMember.getNickname(),
+        return new MemberInfoResponseDto(findMember.getId(), findMember.getNickname(),
                 profile.getProfileString(), profile.getProfileType(), tagDetailDtos);
     }
 
@@ -110,16 +106,36 @@ public class MemberController {
     }
 
     /**
+     * 회원 조회 -> 닉네임, 폰번호, 이메일, 실명
+     */
+    @GetMapping("/info/{memberId}/part")
+    @ResponseStatus(HttpStatus.OK)
+    public MemberInfoPartDto getMemberInfos(@PathVariable("memberId") Long memberId){
+        return modelMapper.map(memberService.getMemberById(memberId), MemberInfoPartDto.class);
+    }
+
+    /**
      * 회원 조회 -> Set 회원 아이디로 조회
      */
     @GetMapping("/info")
     @ResponseStatus(HttpStatus.OK)
     public PageResponseDto getMemberNickName(@RequestParam("memberId") Set<Long> memberIds,
-                                             @RequestParam("page") int page,
+                                             @RequestParam(value = "page", required = false) int page,
                                              @Jwt String token){
         PageResponseDto<MemberInfoDto> responseDto = createPageDto(memberIds, page, token);
 
         return responseDto;
+    }
+
+    /**
+     * 회원 조회 -> Set 회원 아이디로 조회
+     */
+    @GetMapping("/infos")
+    @ResponseStatus(HttpStatus.OK)
+    public List<MemberInfoDto> getMembers(@RequestParam("memberId") Set<Long> memberIds,
+                                          @Jwt String token){
+
+        return getMembersDto(memberIds, token);
     }
 
     /**
@@ -220,9 +236,10 @@ public class MemberController {
     @GetMapping("/matchings")
     @ResponseStatus(HttpStatus.OK)
     public ResponseDto getMatchingData(@RequestParam(value = "tagId", required = false) Set<Long> tagIds,
+                                       @RequestParam(value = "boardId", required = false) Long boardId,
                                        @RequestParam("page") int page,
                                        @Jwt String token){
-        MatchingResponseDto responseDto = createMatchingResponseDto(tagIds, page, token);
+        MatchingResponseDto responseDto = createMatchingResponseDto(tagIds, boardId, page, token);
 
         return new ResponseDto(HttpStatus.OK.value(), "success", "추천 회원 조회 성공", responseDto);
     }
@@ -254,10 +271,17 @@ public class MemberController {
         return streakResponseDto;
     }
 
-    private MatchingResponseDto createMatchingResponseDto(Set<Long> tagIds, int page, String token) {
+    private MatchingResponseDto createMatchingResponseDto(Set<Long> tagIds, Long boardId, int page, String token) {
         MatchingResponseDto responseDto = new MatchingResponseDto();
 
-        Page<Member> memberPage = memberService.getMemberWithTagId(tagIds, page);
+        Page<Member> memberPage;
+        if(boardId != null){
+            memberPage = memberService.getMemberWithTagIdAndNoMemberId(tagIds, page,
+                    matchingService.findAllBoardMember(boardId, token));
+        }else{
+            memberPage = memberService.getMemberWithTagId(tagIds, page);
+        }
+
         responseDto.setTotalPageCount(memberPage.getTotalPages());
         responseDto.setTotalCount(memberPage.getTotalElements());
         Set<Long> tagIdSet = new HashSet<>();
@@ -281,7 +305,7 @@ public class MemberController {
             List<MemberTag> memberTags = member.getMemberTags();
             memberTags.forEach(memberTag -> {
                 tagDto.getTags().forEach(tag -> {
-                    if(tag.getId() == memberTag.getTagId()){
+                    if(ObjectUtils.equals(tag.getId(), memberTag.getTagId())){
                         detailResponseDto.getTagData().add(modelMapper.map(tag, TagDetailDto.class));
                     }
                 });
@@ -303,6 +327,39 @@ public class MemberController {
             responseDto.getData().add(detailResponseDto);
         });
         return responseDto;
+    }
+
+    private List<MemberInfoDto> getMembersDto(Set<Long> memberIds, String token) {
+        List<Member> findMembers = memberService.getMembersByMemberIds(memberIds);
+
+        Set<Long> tagIds = new HashSet<>();
+        findMembers.forEach(member ->
+                member.getMemberTags().forEach(memberTag -> tagIds.add(memberTag.getTagId())));
+        TagsDto tagDto = tagService.getTagNames(token, tagIds);
+
+        List<MemberInfoDto> responseDetailDto = new ArrayList<>();
+
+        findMembers.forEach(member -> {
+            MemberInfoDto memberInfoDto = new MemberInfoDto();
+            List<Profile> profiles = member.getProfile();
+            if(profiles.size() > 0){
+                Profile profile = profiles.get(0);
+                memberInfoDto.setProfileString(profileService.getProfileString(profile.getStoreFileName()));
+                memberInfoDto.setProfileType(profile.getContentType());
+            }
+            memberInfoDto.setNickName(member.getNickname());
+            memberInfoDto.setId(member.getId());
+            memberInfoDto.setEmail(member.getEmail());
+
+            member.getMemberTags().forEach(memberTag -> tagDto.getTags().forEach(tagDetailDto -> {
+                if(ObjectUtils.equals(memberTag.getTagId(), tagDetailDto.getId())){
+                    memberInfoDto.getTags().add(new TagDetailDto(tagDetailDto.getId(), tagDetailDto.getName()));
+                }
+            }));
+
+            responseDetailDto.add(memberInfoDto);
+        });
+        return responseDetailDto;
     }
 
     private PageResponseDto<MemberInfoDto> createPageDto(Set<Long> memberIds, int page, String token) {
@@ -328,17 +385,13 @@ public class MemberController {
             }
             memberInfoDto.setNickName(member.getNickname());
             memberInfoDto.setId(member.getId());
+            memberInfoDto.setEmail(member.getEmail());
 
-            System.out.println("me = " + member.getMemberTags().size());
-            member.getMemberTags().forEach(memberTag -> {
-                tagDto.getTags().forEach(tagDetailDto -> {
-                    System.out.println("memberTag = " + memberTag.getTagId());
-                    System.out.println("getId() = " + tagDetailDto.getId());
-                    if(tagDetailDto.getId() == memberTag.getTagId()){
-                        memberInfoDto.getTags().add(new TagDetailDto(tagDetailDto.getId(), tagDetailDto.getName()));
-                    }
-                });
-            });
+            member.getMemberTags().forEach(memberTag -> tagDto.getTags().forEach(tagDetailDto -> {
+                if(ObjectUtils.equals(memberTag.getTagId(), tagDetailDto.getId())){
+                    memberInfoDto.getTags().add(new TagDetailDto(tagDetailDto.getId(), tagDetailDto.getName()));
+                }
+            }));
 
             responseDetailDto.add(memberInfoDto);
         });

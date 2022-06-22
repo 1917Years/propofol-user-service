@@ -7,7 +7,6 @@ import propofol.userservice.domain.image.entity.Profile;
 import propofol.userservice.domain.timetable.entity.TimeTable;
 
 import javax.persistence.*;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,9 +29,6 @@ public class Member extends BaseEntity{
     @Column(unique = true)
     private String nickname; // 별명
     private String phoneNumber;
-    private LocalDate birth;
-    private String degree; // 학력
-    private String score; // 학점
     private long totalRecommend;
 
     @Enumerated(value = EnumType.STRING)
@@ -58,16 +54,13 @@ public class Member extends BaseEntity{
     }
 
     @Builder(builderMethodName = "createMember")
-    public Member(String email, String password, String username, String nickname, String phoneNumber, LocalDate birth,
-                  String degree, String score, Authority authority, long totalRecommend) {
+    public Member(String email, String password, String username, String nickname, String phoneNumber,
+                  Authority authority, long totalRecommend) {
         this.email = email;
         this.password = password;
         this.username = username;
         this.nickname = nickname;
         this.phoneNumber = phoneNumber;
-        this.birth = birth;
-        this.degree = degree;
-        this.score = score;
         this.authority = authority;
         this.totalRecommend = totalRecommend;
     }

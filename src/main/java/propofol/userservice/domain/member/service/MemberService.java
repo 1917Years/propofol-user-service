@@ -18,6 +18,7 @@ public interface MemberService {
     Page<Member> getMembersByMemberIdsAndPage(Set<Long> memberIds, int page);
     List<Member> getMembersByMemberIds(Set<Long> memberIds);
     Member getMemberWithTimeTablesByMemberId(Long memberId);
+    Page<Member> getMemberWithTagIdAndNoMemberId(Set<Long> tagIds, int page, Set<Long> memberIds);
 
     /**
      * 회원 저장
