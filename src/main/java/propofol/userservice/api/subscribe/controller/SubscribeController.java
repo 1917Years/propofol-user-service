@@ -74,20 +74,6 @@ public class SubscribeController {
     }
 
     /**
-     * follower 목록 조회
-     */
-    @GetMapping("/followers")
-    @ResponseStatus(HttpStatus.OK)
-    public ResponseDto getFollowers(@RequestParam("page") int page,
-                                    @Token Long memberId){
-        Page<Subscribe> subscribePage = followingService.findMyFollowers(memberId, page);
-
-        return new ResponseDto(HttpStatus.OK.value(), "success",
-                "following Count 조회 성공", createPageResponseDtoWithPageSubscribe(subscribePage, false));
-    }
-
-
-    /**
      * following 목록 조회
      */
     @GetMapping("/followings")
@@ -97,7 +83,20 @@ public class SubscribeController {
         Page<Subscribe> subscribePage = followingService.findMyFollowings(memberId, page);
 
         return new ResponseDto(HttpStatus.OK.value(), "success",
-                "following Count 조회 성공", createPageResponseDtoWithPageSubscribe(subscribePage, true));
+                "following 목록 조회 성공", createPageResponseDtoWithPageSubscribe(subscribePage, true));
+    }
+
+    /**
+     * follower 목록 조회
+     */
+    @GetMapping("/followers")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseDto getFollowers(@RequestParam("page") int page,
+                                    @Token Long memberId){
+        Page<Subscribe> subscribePage = followingService.findMyFollowers(memberId, page);
+
+        return new ResponseDto(HttpStatus.OK.value(), "success",
+                "follower 목록 조회 성공", createPageResponseDtoWithPageSubscribe(subscribePage, false));
     }
 
     @GetMapping("/following")
@@ -138,7 +137,6 @@ public class SubscribeController {
         }else{
             Set<Long> followingIds
                     = subscribePage.getContent().stream().map(Subscribe::getFollowingMemberId).collect(Collectors.toSet());
-
             List<Member> followingMembers = memberService.getMembersByMemberIds(followingIds);
             followingMembers.forEach(member -> {
                 SubscribeResponseDto subscribeResponseDto = createSubscribeDto(member);
