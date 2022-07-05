@@ -26,6 +26,6 @@ public interface SubscribeRepository extends JpaRepository<Subscribe, Long> {
 
     Optional<Subscribe> findByFollowingMemberIdAndMemberId(Long followingMemberId, Long MemberId);
 
-    @Query("select s.member.id from Subscribe s where s.followingMemberId = :memberId")
+    @Query("select s.id from Subscribe s where s.followingMemberId = :memberId")
     Set<Long> getFollowerIds(@Param("memberId") Long memberId);
 }
